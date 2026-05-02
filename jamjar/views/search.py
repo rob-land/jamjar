@@ -1,0 +1,154 @@
+"""Search page with debounced search-hint queries."""
+
+from __future__ import annotations
+
+import logging
+from typing import TYPE_CHECKING
+
+import gi
+gi.require_version("Gtk", "4.0")
+gi.require_version("Adw", "1")
+from gi.repository import Adw, GLib, Gtk
+
+from ..models import album_from_json, artist_from_json, track_from_json
+from ._common import escape_markup
+
+if TYPE_CHECKING:
+    from ..application import JamjarApplication
+    from ..window import JamjarWindow
+
+log = logging.getLogger(__name__)
+
+DEBOUNCE_MS = 250
+
+
+@Gtk.Template(resource_path="/land/rob/Jamjar/search-page.ui")
+class SearchPage(Adw.NavigationPage):
+    __gtype_name__ = "JamjarSearchPage"
+
+    sidebar_toggle = Gtk.Template.Child()
+    search_bar     = Gtk.Template.Child()
+    search_entry   = Gtk.Template.Child()
+    tracks_group   = Gtk.Template.Child()
+    albums_group   = Gtk.Template.Child()
+    artists_group  = Gtk.Template.Child()
+    empty_state    = Gtk.Template.Child()
+
+    def __init__(self, app: "JamjarApplication", window: "JamjarWindow") -> None:
+        super().__init__()
+        self.app = app
+        self.window = window
+        self.sidebar_toggle.connect("clicked", lambda *_: self.window.toggle_sidebar())
+        self._debounce_source = None
+        self._search_seq = 0
+        self._rows_by_group: dict[Adw.PreferencesGroup, list[Adw.ActionRow]] = {
+            self.tracks_group:  [],
+            self.albums_group:  [],
+            self.artists_group: [],
+        }
+        self.search_entry.connect("search-changed", self._on_changed)
+
+    def focus_entry(self) -> None:
+        self.search_bar.set_search_mode(True)
+        self.search_entry.grab_focus()
+
+    def _on_changed(self, entry) -> None:
+        if self._debounce_source is not None:
+            GLib.source_remove(self._debounce_source)
+            self._debounce_source = None
+        text = entry.get_text().strip()
+        if not text:
+            # Bump the seq so any in-flight callback is ignored.
+            self._search_seq += 1
+            self._show_empty()
+            return
+        self._debounce_source = GLib.timeout_add(DEBOUNCE_MS, lambda: self._fire(text))
+
+    def _fire(self, text: str) -> bool:
+        self._debounce_source = None
+        if self.app.library is None:
+            return False
+        self._search_seq += 1
+        seq = self._search_seq
+        self.app.library.search(text, lambda hits: self._render(seq, hits))
+        return False
+
+    def _show_empty(self) -> None:
+        self._clear_rows()
+        self.empty_state.set_visible(True)
+        self.tracks_group.set_visible(False)
+        self.albums_group.set_visible(False)
+        self.artists_group.set_visible(False)
+
+    def _clear_rows(self) -> None:
+        for group, rows in self._rows_by_group.items():
+            for row in rows:
+                group.remove(row)
+            rows.clear()
+
+    def _render(self, seq: int, hits) -> None:
+        # Drop stale callbacks: a faster, later request must not be
+        # overwritten by a slower, earlier one.
+        if seq != self._search_seq:
+            return
+        self._clear_rows()
+        self.empty_state.set_visible(False)
+
+        any_tracks = any_albums = any_artists = False
+        for hit in hits:
+            row = Adw.ActionRow(title=escape_markup(hit.name),
+                                subtitle=escape_markup(hit.secondary),
+                                activatable=True)
+            row.add_prefix(Gtk.Image.new_from_icon_name(_icon_for_type(hit.type)))
+            row.connect("activated", self._on_row_activated, hit)
+            if hit.type == "Audio":
+                self.tracks_group.add(row)
+                self._rows_by_group[self.tracks_group].append(row)
+                any_tracks = True
+            elif hit.type == "MusicAlbum":
+                self.albums_group.add(row)
+                self._rows_by_group[self.albums_group].append(row)
+                any_albums = True
+            elif hit.type == "MusicArtist":
+                self.artists_group.add(row)
+                self._rows_by_group[self.artists_group].append(row)
+                any_artists = True
+
+        self.tracks_group.set_visible(any_tracks)
+        self.albums_group.set_visible(any_albums)
+        self.artists_group.set_visible(any_artists)
+
+    def _on_row_activated(self, _row, hit) -> None:
+        if self.app.client is None:
+            return
+
+        async def fetch():
+            return await self.app.client.get_item(hit.item_id)
+
+        def done(future):
+            try:
+                item = future.result()
+            except Exception as e:
+                log.warning("failed to fetch search hit %s: %s", hit.item_id, e)
+                return
+            GLib.idle_add(lambda: (self._dispatch(hit.type, item), False)[1])
+
+        self.app.runner.submit(fetch()).add_done_callback(done)
+
+    def _dispatch(self, type_: str, item: dict) -> None:
+        if type_ == "Audio":
+            track = track_from_json(item)
+            self.app.queue.replace([track], start_index=0)
+            self.app.player.play(track)
+        elif type_ == "MusicAlbum":
+            self.window.open_album(album_from_json(item))
+        elif type_ == "MusicArtist":
+            self.window.open_artist(artist_from_json(item))
+
+
+def _icon_for_type(type_: str) -> str:
+    return {
+        "Audio":       "audio-x-generic-symbolic",
+        "MusicAlbum":  "media-optical-cd-audio-symbolic",
+        "MusicArtist": "system-users-symbolic",
+    }.get(type_, "edit-find-symbolic")

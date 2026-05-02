@@ -1,0 +1,94 @@
+using Gtk 4.0;
+using Adw 1;
+
+template $JamjarPreferences: Adw.PreferencesDialog {
+  title: _("Preferences");
+
+  Adw.PreferencesPage {
+    title: _("General");
+    icon-name: "preferences-system-symbolic";
+
+    Adw.PreferencesGroup {
+      title: _("Appearance");
+
+      Adw.ComboRow color_scheme_row {
+        title: _("Color Scheme");
+
+        model: StringList {
+          strings [_("Follow System"), _("Light"), _("Dark")]
+        };
+      }
+    }
+
+    Adw.PreferencesGroup {
+      title: _("Playback");
+
+      Adw.SwitchRow replaygain_row {
+        title: _("Apply ReplayGain");
+        subtitle: _("Use ReplayGain tags when present");
+      }
+
+      Adw.SpinRow sleep_timer_row {
+        title: _("Default Sleep Timer");
+        subtitle: _("Minutes");
+
+        adjustment: Adjustment {
+          lower: 0;
+          upper: 240;
+          step-increment: 5;
+          value: 30;
+        };
+      }
+    }
+  }
+
+  Adw.PreferencesPage {
+    title: _("Network");
+    icon-name: "network-wireless-symbolic";
+
+    Adw.PreferencesGroup {
+      title: _("Wi-Fi");
+
+      Adw.ComboRow codec_wifi_row {
+        title: _("Codec");
+
+        model: StringList {
+          strings [_("Original"), _("Opus"), _("AAC"), _("MP3"), _("FLAC")]
+        };
+      }
+
+      Adw.SpinRow bitrate_wifi_row {
+        title: _("Maximum Bitrate (kbps)");
+        subtitle: _("0 means unlimited");
+
+        adjustment: Adjustment {
+          lower: 0;
+          upper: 2304;
+          step-increment: 32;
+        };
+      }
+    }
+
+    Adw.PreferencesGroup {
+      title: _("Cellular");
+
+      Adw.ComboRow codec_mobile_row {
+        title: _("Codec");
+
+        model: StringList {
+          strings [_("Original"), _("Opus"), _("AAC"), _("MP3"), _("FLAC")]
+        };
+      }
+
+      Adw.SpinRow bitrate_mobile_row {
+        title: _("Maximum Bitrate (kbps)");
+
+        adjustment: Adjustment {
+          lower: 32;
+          upper: 2304;
+          step-increment: 32;
+        };
+      }
+    }
+  }
+}

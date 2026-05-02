@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gresources>
+  <gresource prefix="/land/rob/Jamjar">
+    <file compressed="true" preprocess="xml-stripblanks">window.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">server-row.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">login-dialog.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">library-page.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">album-page.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">artist-page.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">playlist-page.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">home-page.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">search-page.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">now-playing-bar.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">now-playing-page.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">queue-pane.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">prefs.ui</file>
+    <file alias="style.css">style.css</file>
+  </gresource>
+</gresources>

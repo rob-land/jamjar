@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <defs>
+    <linearGradient id="jar" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f5b76a"/>
+      <stop offset="1" stop-color="#d97742"/>
+    </linearGradient>
+    <linearGradient id="lid" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#5e7ce2"/>
+      <stop offset="1" stop-color="#3852b4"/>
+    </linearGradient>
+  </defs>
+  <!-- Lid -->
+  <rect x="28" y="14" width="72" height="18" rx="6" fill="url(#lid)"/>
+  <rect x="28" y="28" width="72" height="6"  fill="#2b3d8a"/>
+  <!-- Jar body -->
+  <rect x="22" y="34" width="84" height="80" rx="14" fill="url(#jar)" stroke="#7a3a1d" stroke-width="2"/>
+  <!-- Highlight -->
+  <rect x="30" y="42" width="10" height="60" rx="5" fill="#ffffff" opacity="0.25"/>
+  <!-- Note -->
+  <g fill="#2b1a10">
+    <rect x="55" y="50" width="6" height="34" rx="2"/>
+    <ellipse cx="52" cy="84" rx="9" ry="6"/>
+    <path d="M61,50 C70,52 76,58 76,66 C72,62 66,60 61,60 Z"/>
+  </g>
+</svg>

@@ -1,0 +1,7 @@
+"""Build-time constants substituted by Meson."""
+
+PKGDATADIR      = @PKGDATADIR@
+LOCALEDIR       = @LOCALEDIR@
+APP_ID          = @APP_ID@
+VERSION         = @VERSION@
+GETTEXT_PACKAGE = @GETTEXT_PACKAGE@

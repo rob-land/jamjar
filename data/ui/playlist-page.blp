@@ -1,0 +1,56 @@
+using Gtk 4.0;
+using Adw 1;
+
+template $JamjarPlaylistPage: Adw.NavigationPage {
+  title: _("Playlist");
+
+  child: Adw.ToolbarView {
+    [top]
+    Adw.HeaderBar {
+      [end]
+      Button rename_button {
+        icon-name: "document-edit-symbolic";
+        tooltip-text: _("Rename");
+      }
+
+      [end]
+      Button delete_button {
+        icon-name: "user-trash-symbolic";
+        tooltip-text: _("Delete");
+
+        styles ["destructive-action"]
+      }
+    }
+
+    content: ScrolledWindow {
+      hscrollbar-policy: never;
+
+      child: Adw.Clamp {
+        maximum-size: 960;
+
+        child: Box {
+          orientation: vertical;
+          spacing: 12;
+          margin-start: 12;
+          margin-end: 12;
+          margin-top: 12;
+          margin-bottom: 12;
+
+          Label playlist_title_label {
+            xalign: 0;
+            styles ["title-1"]
+          }
+
+          Label playlist_meta_label {
+            xalign: 0;
+            styles ["dim-label"]
+          }
+
+          ListView playlist_tracks {
+            single-click-activate: true;
+          }
+        };
+      };
+    };
+  };
+}

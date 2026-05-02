@@ -1,0 +1,16 @@
+build/
+builddir/
+build-flatpak/
+.flatpak-builder/
+repo/
+install-prefix/
+.claude/
+*.pyc
+__pycache__/
+.venv/
+*.egg-info/
+.vscode/
+.idea/
+*.swp
+.DS_Store
+po/*.mo

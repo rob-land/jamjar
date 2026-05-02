@@ -1,0 +1,105 @@
+using Gtk 4.0;
+using Adw 1;
+
+template $JamjarLibraryPage: Adw.NavigationPage {
+  title: _("Library");
+  tag: "library";
+
+  child: Adw.ToolbarView {
+    [top]
+    Adw.HeaderBar {
+      [start]
+      Button sidebar_toggle {
+        icon-name: "sidebar-show-symbolic";
+        tooltip-text: _("Toggle Sidebar");
+      }
+
+      title-widget: Adw.ViewSwitcher switcher {
+        policy: wide;
+        stack: stack;
+      };
+
+      [end]
+      Button library_search {
+        icon-name: "system-search-symbolic";
+        action-name: "app.search";
+        tooltip-text: _("Search");
+      }
+
+      [end]
+      MenuButton letter_button {
+        label: "A-Z";
+        tooltip-text: _("Jump to letter");
+        styles ["flat"]
+      }
+    }
+
+    content: Adw.ViewStack stack {
+      vexpand: true;
+
+      Adw.ViewStackPage {
+        name: "albums";
+        title: _("Albums");
+        icon-name: "media-optical-cd-audio-symbolic";
+
+        child: ScrolledWindow {
+          hscrollbar-policy: never;
+
+          child: GridView albums_grid {
+            single-click-activate: true;
+            min-columns: 2;
+            max-columns: 8;
+
+            styles ["album-tile"]
+          };
+        };
+      }
+
+      Adw.ViewStackPage {
+        name: "artists";
+        title: _("Artists");
+        icon-name: "system-users-symbolic";
+
+        child: ScrolledWindow {
+          hscrollbar-policy: never;
+
+          child: GridView artists_grid {
+            single-click-activate: true;
+            min-columns: 2;
+            max-columns: 8;
+          };
+        };
+      }
+
+      Adw.ViewStackPage {
+        name: "songs";
+        title: _("Songs");
+        icon-name: "audio-x-generic-symbolic";
+
+        child: ScrolledWindow {
+          hscrollbar-policy: never;
+
+          child: ColumnView songs_column {
+            show-row-separators: true;
+            show-column-separators: false;
+          };
+        };
+      }
+
+      Adw.ViewStackPage {
+        name: "playlists";
+        title: _("Playlists");
+        icon-name: "view-list-symbolic";
+
+        child: ScrolledWindow {
+          hscrollbar-policy: never;
+
+          child: ListBox playlists_list {
+            styles ["boxed-list"]
+            selection-mode: none;
+          };
+        };
+      }
+    };
+  };
+}

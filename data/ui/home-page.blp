@@ -1,0 +1,98 @@
+using Gtk 4.0;
+using Adw 1;
+
+template $JamjarHomePage: Adw.NavigationPage {
+  title: _("Home");
+  tag: "home";
+
+  child: Adw.ToolbarView {
+    [top]
+    Adw.HeaderBar {
+      [start]
+      Button sidebar_toggle {
+        icon-name: "sidebar-show-symbolic";
+        tooltip-text: _("Toggle Sidebar");
+      }
+    }
+
+    content: ScrolledWindow {
+      hscrollbar-policy: never;
+
+      child: Adw.Clamp {
+        maximum-size: 1100;
+
+        child: Box {
+          orientation: vertical;
+          spacing: 24;
+          margin-start: 12;
+          margin-end: 12;
+          margin-top: 12;
+          margin-bottom: 12;
+
+          Box {
+            orientation: vertical;
+            spacing: 6;
+
+            Label {
+              label: _("Recently Played");
+              xalign: 0;
+              styles ["heading"]
+            }
+
+            ScrolledWindow {
+              vscrollbar-policy: never;
+              propagate-natural-height: true;
+
+              child: Box recently_played_row {
+                orientation: horizontal;
+                spacing: 12;
+              };
+            }
+          }
+
+          Box {
+            orientation: vertical;
+            spacing: 6;
+
+            Label {
+              label: _("Recently Added");
+              xalign: 0;
+              styles ["heading"]
+            }
+
+            ScrolledWindow {
+              vscrollbar-policy: never;
+              propagate-natural-height: true;
+
+              child: Box recently_added_row {
+                orientation: horizontal;
+                spacing: 12;
+              };
+            }
+          }
+
+          Box {
+            orientation: vertical;
+            spacing: 6;
+
+            Label {
+              label: _("Suggested");
+              xalign: 0;
+              styles ["heading"]
+            }
+
+            ScrolledWindow {
+              vscrollbar-policy: never;
+              propagate-natural-height: true;
+
+              child: Box suggested_row {
+                orientation: horizontal;
+                spacing: 12;
+              };
+            }
+          }
+        };
+      };
+    };
+  };
+}

@@ -1,0 +1,114 @@
+using Gtk 4.0;
+using Adw 1;
+
+template $JamjarWindow: Adw.ApplicationWindow {
+  default-width: 1100;
+  default-height: 720;
+  width-request: 320;
+  height-request: 480;
+  title: _("Jamjar");
+
+  Adw.Breakpoint {
+    condition ("max-width: 600sp")
+
+    setters {
+      split_view.collapsed: true;
+      now_playing_bar.compact: true;
+    }
+  }
+
+  content: Adw.ToastOverlay toast_overlay {
+    child: Adw.OverlaySplitView split_view {
+      sidebar-width-fraction: 0.22;
+      min-sidebar-width: 200;
+      max-sidebar-width: 320;
+
+      sidebar: Adw.NavigationPage {
+        title: _("Jamjar");
+
+        child: Adw.ToolbarView {
+          [top]
+          Adw.HeaderBar sidebar_header {
+            [end]
+            MenuButton primary_menu_button {
+              icon-name: "open-menu-symbolic";
+              menu-model: primary_menu;
+              tooltip-text: _("Main Menu");
+              primary: true;
+            }
+          }
+
+          ScrolledWindow {
+            hscrollbar-policy: never;
+            vexpand: true;
+
+            child: ListBox sidebar_list {
+              styles ["navigation-sidebar"]
+              selection-mode: single;
+            };
+          }
+        };
+      };
+
+      content: Adw.NavigationPage content_page {
+        title: _("Jamjar");
+
+        child: Box {
+          orientation: vertical;
+          spacing: 0;
+
+          Adw.NavigationView nav_view {
+            vexpand: true;
+          }
+
+          $JamjarNowPlayingBar now_playing_bar {}
+        };
+      };
+    };
+  };
+}
+
+menu primary_menu {
+  section {
+    item {
+      label: _("Sleep _Timer…");
+      action: "app.sleep-timer";
+    }
+  }
+
+  section {
+    item {
+      label: _("_Preferences");
+      action: "app.preferences";
+    }
+
+    item {
+      label: _("_Keyboard Shortcuts");
+      action: "win.show-help-overlay";
+    }
+
+    item {
+      label: _("_About Jamjar");
+      action: "app.about";
+    }
+  }
+
+  section {
+    item {
+      label: _("Switch _Server…");
+      action: "app.switch-server";
+    }
+
+    item {
+      label: _("_Log Out");
+      action: "app.logout";
+    }
+  }
+
+  section {
+    item {
+      label: _("_Quit Jamjar");
+      action: "app.quit";
+    }
+  }
+}

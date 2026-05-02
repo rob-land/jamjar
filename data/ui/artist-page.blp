@@ -1,0 +1,85 @@
+using Gtk 4.0;
+using Adw 1;
+
+template $JamjarArtistPage: Adw.NavigationPage {
+  title: _("Artist");
+
+  child: Adw.ToolbarView {
+    [top]
+    Adw.HeaderBar {}
+
+    content: ScrolledWindow {
+      hscrollbar-policy: never;
+
+      child: Adw.Clamp {
+        maximum-size: 960;
+
+        child: Box {
+          orientation: vertical;
+          spacing: 18;
+          margin-start: 12;
+          margin-end: 12;
+          margin-top: 12;
+          margin-bottom: 12;
+
+          Box {
+            orientation: horizontal;
+            spacing: 18;
+
+            Picture artist_image {
+              width-request: 160;
+              height-request: 160;
+              content-fit: cover;
+
+              styles ["cover"]
+            }
+
+            Box {
+              orientation: vertical;
+              spacing: 6;
+              hexpand: true;
+              valign: center;
+
+              Label artist_name_label {
+                xalign: 0;
+                wrap: true;
+
+                styles ["title-1"]
+              }
+
+              Label artist_meta_label {
+                xalign: 0;
+
+                styles ["caption", "dim-label"]
+              }
+
+              Box {
+                orientation: horizontal;
+                spacing: 6;
+                margin-top: 6;
+
+                ToggleButton favorite_button {
+                  icon-name: "heart-outline-symbolic";
+                  tooltip-text: _("Favorite");
+                }
+              }
+            }
+          }
+
+          Label {
+            label: _("Albums");
+            xalign: 0;
+
+            styles ["heading"]
+          }
+
+          GridView artist_albums_grid {
+            min-columns: 2;
+            max-columns: 8;
+            single-click-activate: true;
+          }
+        };
+      };
+    };
+  };
+}

@@ -1,0 +1,67 @@
+using Gtk 4.0;
+using Adw 1;
+
+template $JamjarQueuePage: Adw.NavigationPage {
+  title: _("Queue");
+  tag: "queue";
+
+  child: Adw.ToolbarView {
+    [top]
+    Adw.HeaderBar {
+      [start]
+      Button sidebar_toggle {
+        icon-name: "sidebar-show-symbolic";
+        tooltip-text: _("Toggle Sidebar");
+      }
+
+      [end]
+      MenuButton queue_menu_button {
+        icon-name: "view-more-symbolic";
+        primary: false;
+        tooltip-text: _("Queue Menu");
+
+        menu-model: queue_menu;
+      }
+    }
+
+    content: Adw.Clamp {
+      maximum-size: 960;
+
+      child: ScrolledWindow {
+        hscrollbar-policy: never;
+
+        child: Box {
+          orientation: vertical;
+          spacing: 12;
+          margin-start: 6;
+          margin-end: 6;
+          margin-top: 6;
+          margin-bottom: 6;
+
+          Adw.StatusPage empty_state {
+            icon-name: "view-list-symbolic";
+            title: _("Queue is empty");
+            description: _("Pick an album, playlist, or song to start playing.");
+            vexpand: true;
+          }
+
+          ListBox queue_list {
+            visible: false;
+            selection-mode: none;
+
+            styles ["boxed-list"]
+          }
+        };
+      };
+    };
+  };
+}
+
+menu queue_menu {
+  section {
+    item {
+      label: _("Clear Queue");
+      action: "win.clear-queue";
+    }
+  }
+}

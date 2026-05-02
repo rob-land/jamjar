@@ -1,0 +1,18 @@
+using Gtk 4.0;
+using Adw 1;
+
+template $JamjarServerRow: Adw.ActionRow {
+  activatable: true;
+
+  [prefix]
+  Image {
+    icon-name: "network-server-symbolic";
+    pixel-size: 24;
+  }
+
+  [suffix]
+  Image {
+    icon-name: "go-next-symbolic";
+    valign: center;
+  }
+}

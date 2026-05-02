@@ -1,0 +1,21 @@
+#!@PYTHON@
+
+import sys
+import gettext
+import locale
+import signal
+
+# Allow Ctrl+C to terminate even though GTK swallows SIGINT by default
+signal.signal(signal.SIGINT, signal.SIG_DFL)
+
+try:
+    locale.bindtextdomain(@GETTEXT_PACKAGE@, @LOCALEDIR@)
+    locale.textdomain(@GETTEXT_PACKAGE@)
+except (AttributeError, locale.Error):
+    pass
+
+gettext.bindtextdomain(@GETTEXT_PACKAGE@, @LOCALEDIR@)
+gettext.textdomain(@GETTEXT_PACKAGE@)
+
+from jamjar.main import main
+sys.exit(main())

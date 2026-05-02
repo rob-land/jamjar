@@ -1,0 +1,67 @@
+using Gtk 4.0;
+using Adw 1;
+
+template $JamjarSearchPage: Adw.NavigationPage {
+  title: _("Search");
+  tag: "search";
+
+  child: Adw.ToolbarView {
+    [top]
+    Adw.HeaderBar {
+      [start]
+      Button sidebar_toggle {
+        icon-name: "sidebar-show-symbolic";
+        tooltip-text: _("Toggle Sidebar");
+      }
+    }
+
+    [top]
+    SearchBar search_bar {
+      search-mode-enabled: true;
+
+      child: SearchEntry search_entry {
+        placeholder-text: _("Search tracks, albums, artists…");
+        width-chars: 36;
+      };
+    }
+
+    content: ScrolledWindow {
+      hscrollbar-policy: never;
+
+      child: Adw.Clamp {
+        maximum-size: 960;
+
+        child: Box {
+          orientation: vertical;
+          spacing: 18;
+          margin-start: 12;
+          margin-end: 12;
+          margin-top: 12;
+          margin-bottom: 12;
+
+          Adw.PreferencesGroup tracks_group {
+            title: _("Tracks");
+            visible: false;
+          }
+
+          Adw.PreferencesGroup albums_group {
+            title: _("Albums");
+            visible: false;
+          }
+
+          Adw.PreferencesGroup artists_group {
+            title: _("Artists");
+            visible: false;
+          }
+
+          Adw.StatusPage empty_state {
+            icon-name: "system-search-symbolic";
+            title: _("Type to search");
+            description: _("Find tracks, albums, and artists in your library");
+            vexpand: true;
+          }
+        };
+      };
+    };
+  };
+}

@@ -1,0 +1,181 @@
+using Gtk 4.0;
+using Adw 1;
+
+template $JamjarNowPlayingPage: Adw.NavigationPage {
+  title: _("Now Playing");
+  tag: "now-playing";
+
+  styles ["now-playing-page"]
+
+  child: Adw.ToolbarView {
+    [top]
+    Adw.HeaderBar {
+      [start]
+      Button sidebar_toggle {
+        icon-name: "sidebar-show-symbolic";
+        tooltip-text: _("Toggle Sidebar");
+        styles ["flat"]
+      }
+
+      [end]
+      ToggleButton favorite_button {
+        icon-name: "heart-outline-symbolic";
+        tooltip-text: _("Favorite");
+        sensitive: false;
+        styles ["flat", "circular"]
+      }
+    }
+
+    content: ScrolledWindow {
+      hscrollbar-policy: never;
+
+      child: Adw.Clamp {
+        maximum-size: 720;
+
+        child: Box {
+          orientation: vertical;
+          spacing: 24;
+          margin-start: 24;
+          margin-end: 24;
+          margin-top: 24;
+          margin-bottom: 24;
+          valign: center;
+
+          Box {
+            orientation: vertical;
+            spacing: 6;
+            halign: center;
+
+            Adw.Carousel now_playing_carousel {
+              width-request: 320;
+              height-request: 320;
+              halign: center;
+
+              Picture full_cover {
+                content-fit: cover;
+                width-request: 320;
+                height-request: 320;
+                halign: center;
+
+                styles ["cover"]
+              }
+
+              ScrolledWindow {
+                hscrollbar-policy: never;
+                width-request: 320;
+                height-request: 320;
+
+                child: Box lyrics_box {
+                  orientation: vertical;
+                  spacing: 0;
+                  margin-start: 12;
+                  margin-end: 12;
+                  margin-top: 12;
+                  margin-bottom: 12;
+                  valign: start;
+                };
+              }
+            }
+
+            Adw.CarouselIndicatorDots {
+              carousel: now_playing_carousel;
+              halign: center;
+            }
+          }
+
+          Box {
+            orientation: vertical;
+            spacing: 4;
+
+            Label np_title {
+              ellipsize: end;
+              xalign: 0.5;
+              styles ["title-1"]
+            }
+
+            Label np_artist {
+              ellipsize: end;
+              xalign: 0.5;
+              styles ["title-3", "dim-label"]
+            }
+
+            Label np_album {
+              ellipsize: end;
+              xalign: 0.5;
+              styles ["caption", "dim-label"]
+            }
+          }
+
+          Box {
+            orientation: horizontal;
+            spacing: 8;
+            valign: center;
+
+            Label np_position {
+              label: "0:00";
+              width-chars: 5;
+              styles ["numeric", "caption", "dim-label"]
+            }
+
+            Scale np_progress {
+              orientation: horizontal;
+              draw-value: false;
+              hexpand: true;
+
+              adjustment: Adjustment {
+                lower: 0;
+                upper: 1;
+                step-increment: 1;
+                page-increment: 5;
+              };
+            }
+
+            Label np_duration {
+              label: "0:00";
+              width-chars: 5;
+              styles ["numeric", "caption", "dim-label"]
+            }
+          }
+
+          Box {
+            orientation: horizontal;
+            spacing: 12;
+            halign: center;
+
+            ToggleButton np_shuffle {
+              icon-name: "media-playlist-shuffle-symbolic";
+              tooltip-text: _("Shuffle");
+              styles ["circular", "flat"]
+            }
+
+            Button {
+              icon-name: "media-skip-backward-symbolic";
+              action-name: "app.previous";
+              styles ["circular", "flat"]
+            }
+
+            Button np_play {
+              icon-name: "media-playback-start-symbolic";
+              action-name: "app.toggle";
+              width-request: 56;
+              height-request: 56;
+              styles ["circular", "suggested-action", "pill"]
+            }
+
+            Button {
+              icon-name: "media-skip-forward-symbolic";
+              action-name: "app.next";
+              styles ["circular", "flat"]
+            }
+
+            Button np_repeat {
+              icon-name: "media-playlist-repeat-symbolic";
+              tooltip-text: _("Repeat");
+              styles ["circular", "flat"]
+            }
+          }
+        };
+      };
+    };
+  };
+}

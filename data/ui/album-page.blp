@@ -1,0 +1,96 @@
+using Gtk 4.0;
+using Adw 1;
+
+template $JamjarAlbumPage: Adw.NavigationPage {
+  title: _("Album");
+
+  child: Adw.ToolbarView {
+    [top]
+    Adw.HeaderBar {}
+
+    content: ScrolledWindow {
+      hscrollbar-policy: never;
+
+      child: Adw.Clamp {
+        maximum-size: 960;
+
+        child: Box {
+          orientation: vertical;
+          spacing: 18;
+          margin-start: 12;
+          margin-end: 12;
+          margin-top: 12;
+          margin-bottom: 12;
+
+          Box header_box {
+            orientation: horizontal;
+            spacing: 18;
+
+            Picture cover_picture {
+              width-request: 200;
+              height-request: 200;
+              content-fit: cover;
+
+              styles ["cover"]
+            }
+
+            Box {
+              orientation: vertical;
+              spacing: 6;
+              hexpand: true;
+              valign: center;
+
+              Label album_title_label {
+                xalign: 0;
+                wrap: true;
+
+                styles ["title-1"]
+              }
+
+              Label album_artist_label {
+                xalign: 0;
+                wrap: true;
+
+                styles ["dim-label"]
+              }
+
+              Label album_meta_label {
+                xalign: 0;
+
+                styles ["caption", "dim-label"]
+              }
+
+              Box {
+                orientation: horizontal;
+                spacing: 6;
+                margin-top: 6;
+
+                Button play_button {
+                  label: _("Play");
+
+                  styles ["suggested-action", "pill"]
+                }
+
+                Button shuffle_button {
+                  label: _("Shuffle");
+
+                  styles ["pill"]
+                }
+
+                ToggleButton favorite_button {
+                  icon-name: "heart-outline-symbolic";
+                  tooltip-text: _("Favorite");
+                }
+              }
+            }
+          }
+
+          ListBox tracks_list {
+            styles ["boxed-list"]
+            selection-mode: none;
+          }
+        };
+      };
+    };
+  };
+}

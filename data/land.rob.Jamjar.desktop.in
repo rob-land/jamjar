@@ -1,0 +1,12 @@
+[Desktop Entry]
+Name=Jamjar
+GenericName=Music Player
+Comment=Jellyfin music client for GNOME and Phosh
+Exec=jamjar
+Icon=@APP_ID@
+Terminal=false
+Type=Application
+Categories=GNOME;GTK;AudioVideo;Audio;Player;
+StartupNotify=true
+Keywords=music;jellyfin;audio;player;
+X-Purism-FormFactor=Workstation;Mobile;

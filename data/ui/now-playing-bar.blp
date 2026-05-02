@@ -1,0 +1,165 @@
+using Gtk 4.0;
+using Adw 1;
+
+template $JamjarNowPlayingBar: Box {
+  orientation: vertical;
+  spacing: 0;
+
+  styles ["now-playing-bar"]
+
+  Box {
+    orientation: horizontal;
+    spacing: 8;
+    valign: center;
+    margin-start: 6;
+    margin-end: 6;
+    margin-top: 4;
+    margin-bottom: 4;
+
+    Picture cover {
+      width-request: 44;
+      height-request: 44;
+      content-fit: cover;
+      valign: center;
+
+      styles ["cover"]
+    }
+
+    Box {
+      orientation: vertical;
+      hexpand: true;
+      valign: center;
+      spacing: 0;
+      width-request: 120;
+
+      Label title_label {
+        xalign: 0;
+        ellipsize: end;
+        styles ["heading"]
+      }
+
+      Label artist_label {
+        xalign: 0;
+        ellipsize: end;
+        styles ["caption", "dim-label"]
+      }
+    }
+
+    ToggleButton favorite_button {
+      icon-name: "heart-outline-symbolic";
+      tooltip-text: _("Favorite");
+      valign: center;
+      width-request: 36;
+      height-request: 36;
+      sensitive: false;
+
+      styles ["flat", "circular"]
+    }
+
+    Scale progress_scale {
+      orientation: horizontal;
+      draw-value: false;
+      hexpand: true;
+      width-request: 160;
+      valign: center;
+
+      adjustment: Adjustment progress_adjustment {
+        lower: 0;
+        upper: 1;
+        step-increment: 1;
+        page-increment: 5;
+      };
+    }
+
+    Label position_label {
+      label: "0:00";
+      xalign: 1;
+      width-chars: 5;
+      valign: center;
+
+      styles ["numeric", "caption", "dim-label"]
+    }
+
+    Label duration_label {
+      label: "0:00";
+      xalign: 0;
+      width-chars: 5;
+      valign: center;
+
+      styles ["numeric", "caption", "dim-label"]
+    }
+
+    Button prev_button {
+      icon-name: "media-skip-backward-symbolic";
+      action-name: "app.previous";
+      tooltip-text: _("Previous");
+      valign: center;
+      width-request: 36;
+      height-request: 36;
+
+      styles ["flat", "circular"]
+    }
+
+    Button play_pause_button {
+      icon-name: "media-playback-start-symbolic";
+      action-name: "app.toggle";
+      tooltip-text: _("Play/Pause");
+      valign: center;
+      width-request: 40;
+      height-request: 40;
+
+      styles ["circular", "suggested-action"]
+    }
+
+    Button next_button {
+      icon-name: "media-skip-forward-symbolic";
+      action-name: "app.next";
+      tooltip-text: _("Next");
+      valign: center;
+      width-request: 36;
+      height-request: 36;
+
+      styles ["flat", "circular"]
+    }
+
+    ToggleButton shuffle_button {
+      icon-name: "media-playlist-shuffle-symbolic";
+      tooltip-text: _("Shuffle");
+      valign: center;
+      width-request: 36;
+      height-request: 36;
+
+      styles ["flat", "circular"]
+    }
+
+    Button repeat_button {
+      icon-name: "media-playlist-repeat-symbolic";
+      tooltip-text: _("Repeat: Off");
+      valign: center;
+      width-request: 36;
+      height-request: 36;
+
+      styles ["flat", "circular"]
+    }
+
+    MenuButton volume_button {
+      icon-name: "audio-volume-high-symbolic";
+      tooltip-text: _("Volume");
+      valign: center;
+      width-request: 36;
+      height-request: 36;
+
+      styles ["flat", "circular"]
+    }
+
+    Button expand_button {
+      icon-name: "go-up-symbolic";
+      tooltip-text: _("Open Now Playing");
+      valign: center;
+      width-request: 36;
+      height-request: 36;
+
+      styles ["flat", "circular"]
+    }
+  }
+}

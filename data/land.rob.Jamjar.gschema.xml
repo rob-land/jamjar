@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist gettext-domain="jamjar">
+  <enum id="land.rob.Jamjar.RepeatMode">
+    <value nick="off"  value="0"/>
+    <value nick="all"  value="1"/>
+    <value nick="one"  value="2"/>
+  </enum>
+
+  <enum id="land.rob.Jamjar.Codec">
+    <value nick="copy" value="0"/>
+    <value nick="opus" value="1"/>
+    <value nick="aac"  value="2"/>
+    <value nick="mp3"  value="3"/>
+    <value nick="flac" value="4"/>
+  </enum>
+
+  <enum id="land.rob.Jamjar.ColorScheme">
+    <value nick="default" value="0"/>
+    <value nick="light"   value="1"/>
+    <value nick="dark"    value="2"/>
+  </enum>
+
+  <schema id="land.rob.Jamjar" path="/land/rob/Jamjar/">
+    <key name="device-id" type="s">
+      <default>""</default>
+      <summary>Stable device identifier</summary>
+      <description>
+        UUID generated on first run. Used in the Jellyfin Authorization header so
+        the server can differentiate this client from other devices.
+      </description>
+    </key>
+
+    <key name="last-server-id" type="s">
+      <default>""</default>
+      <summary>Most recently used server ID</summary>
+    </key>
+
+    <key name="last-user-id" type="s">
+      <default>""</default>
+      <summary>Most recently used user ID</summary>
+    </key>
+
+    <key name="last-server-address" type="s">
+      <default>""</default>
+      <summary>Cached base URL of the last server</summary>
+    </key>
+
+    <key name="color-scheme" enum="land.rob.Jamjar.ColorScheme">
+      <default>"default"</default>
+      <summary>Color scheme preference</summary>
+    </key>
+
+    <key name="codec-wifi" enum="land.rob.Jamjar.Codec">
+      <default>"copy"</default>
+      <summary>Audio codec when on Wi-Fi</summary>
+    </key>
+
+    <key name="codec-mobile" enum="land.rob.Jamjar.Codec">
+      <default>"opus"</default>
+      <summary>Audio codec when on cellular</summary>
+    </key>
+
+    <key name="max-bitrate-wifi" type="u">
+      <default>0</default>
+      <summary>Max streaming bitrate (bps) on Wi-Fi; 0 = unlimited</summary>
+    </key>
+
+    <key name="max-bitrate-mobile" type="u">
+      <default>128000</default>
+      <summary>Max streaming bitrate (bps) on cellular</summary>
+    </key>
+
+    <key name="repeat-mode" enum="land.rob.Jamjar.RepeatMode">
+      <default>"off"</default>
+      <summary>Queue repeat mode</summary>
+    </key>
+
+    <key name="shuffle" type="b">
+      <default>false</default>
+      <summary>Queue shuffle state</summary>
+    </key>
+
+    <key name="volume" type="d">
+      <default>1.0</default>
+      <range min="0.0" max="1.0"/>
+      <summary>Playback volume (0.0–1.0)</summary>
+    </key>
+
+    <key name="replaygain" type="b">
+      <default>true</default>
+      <summary>Apply ReplayGain when tags are present</summary>
+    </key>
+
+    <key name="sleep-timer-default-minutes" type="u">
+      <default>30</default>
+      <summary>Default sleep timer duration in minutes</summary>
+    </key>
+
+    <key name="equalizer-preset" type="s">
+      <default>"flat"</default>
+      <summary>Active equalizer preset name</summary>
+    </key>
+
+    <key name="equalizer-bands" type="ad">
+      <default>[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]</default>
+      <summary>Per-band equalizer gains for the 10-band equaliser</summary>
+    </key>
+
+    <key name="window-width" type="i">
+      <default>1100</default>
+      <summary>Last window width</summary>
+    </key>
+
+    <key name="window-height" type="i">
+      <default>720</default>
+      <summary>Last window height</summary>
+    </key>
+
+    <key name="window-maximized" type="b">
+      <default>false</default>
+      <summary>Window was maximized</summary>
+    </key>
+  </schema>
+</schemalist>

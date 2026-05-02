@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>@APP_ID@</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-3.0-or-later</project_license>
+  <name>Jamjar</name>
+  <summary>Jellyfin music for GNOME and Phosh</summary>
+
+  <description>
+    <p>
+      Jamjar is a native GTK4 music client for self-hosted Jellyfin servers.
+      It runs adaptively on GNOME desktops and Phosh-based Linux phones, with
+      Quick Connect and password authentication, library browsing, queue
+      management, MPRIS2 integration and gapless playback.
+    </p>
+  </description>
+
+  <launchable type="desktop-id">@APP_ID@.desktop</launchable>
+
+  <categories>
+    <category>AudioVideo</category>
+    <category>Audio</category>
+    <category>Player</category>
+  </categories>
+
+  <requires>
+    <display_length compare="ge">360</display_length>
+  </requires>
+
+  <recommends>
+    <control>keyboard</control>
+    <control>pointing</control>
+    <control>touch</control>
+  </recommends>
+
+  <content_rating type="oars-1.1" />
+
+  <url type="homepage">https://github.com/rob/jamjar</url>
+  <url type="bugtracker">https://github.com/rob/jamjar/issues</url>
+
+  <developer id="land.rob">
+    <name>Rob</name>
+  </developer>
+
+  <releases>
+    <release version="0.1.0" date="2026-04-25">
+      <description>
+        <p>Initial scaffold release.</p>
+      </description>
+    </release>
+  </releases>
+</component>

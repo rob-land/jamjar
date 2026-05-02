@@ -1,0 +1,245 @@
+using Gtk 4.0;
+using Adw 1;
+
+template $JamjarLoginDialog: Adw.Dialog {
+  title: _("Sign in to Jellyfin");
+  content-width: 480;
+  content-height: 640;
+
+  child: Adw.ToolbarView {
+    [top]
+    Adw.HeaderBar {
+      [start]
+      Button back_button {
+        icon-name: "go-previous-symbolic";
+        visible: false;
+        tooltip-text: _("Back");
+      }
+    }
+
+    content: Adw.NavigationView nav {
+      Adw.NavigationPage server_picker_page {
+        title: _("Choose a Server");
+        tag: "servers";
+
+        child: Adw.ToolbarView {
+          content: ScrolledWindow {
+            hscrollbar-policy: never;
+
+            child: Adw.Clamp {
+              maximum-size: 540;
+              tightening-threshold: 480;
+
+              child: Box {
+                orientation: vertical;
+                spacing: 18;
+                margin-start: 12;
+                margin-end: 12;
+                margin-top: 18;
+                margin-bottom: 18;
+
+                Adw.StatusPage discovery_status {
+                  icon-name: "network-server-symbolic";
+                  title: _("Looking for Jellyfin servers…");
+                  description: _("Make sure your Jellyfin server is on the same network.");
+                  vexpand: false;
+                }
+
+                Adw.PreferencesGroup discovered_group {
+                  title: _("Discovered Servers");
+                  visible: false;
+                }
+
+                Adw.PreferencesGroup {
+                  Adw.ActionRow rescan_row {
+                    activatable: true;
+                    title: _("Scan Again");
+
+                    [prefix]
+                    Image {
+                      icon-name: "view-refresh-symbolic";
+                    }
+                  }
+
+                  Adw.ActionRow manual_row {
+                    activatable: true;
+                    title: _("Connect Manually…");
+                    subtitle: _("Enter a server URL");
+
+                    [prefix]
+                    Image {
+                      icon-name: "edit-symbolic";
+                    }
+
+                    [suffix]
+                    Image {
+                      icon-name: "go-next-symbolic";
+                    }
+                  }
+                }
+              };
+            };
+          };
+        };
+      }
+
+      Adw.NavigationPage manual_page {
+        title: _("Connect Manually");
+        tag: "manual";
+
+        child: Adw.ToolbarView {
+          content: Adw.Clamp {
+            maximum-size: 480;
+
+            child: Box {
+              orientation: vertical;
+              spacing: 18;
+              margin-start: 12;
+              margin-end: 12;
+              margin-top: 18;
+              margin-bottom: 18;
+
+              Adw.PreferencesGroup {
+                title: _("Server Address");
+
+                Adw.EntryRow address_entry {
+                  title: _("https://jellyfin.example.com");
+                  input-purpose: url;
+                }
+              }
+
+              Button manual_continue {
+                label: _("Continue");
+                halign: center;
+
+                styles ["pill", "suggested-action"]
+              }
+            };
+          };
+        };
+      }
+
+      Adw.NavigationPage auth_page {
+        title: _("Sign In");
+        tag: "auth";
+
+        child: Adw.ToolbarView {
+          content: ScrolledWindow {
+            hscrollbar-policy: never;
+
+            child: Adw.Clamp {
+              maximum-size: 480;
+
+              child: Box auth_root {
+                orientation: vertical;
+                spacing: 18;
+                margin-start: 12;
+                margin-end: 12;
+                margin-top: 18;
+                margin-bottom: 18;
+
+                // ----- Quick Connect view -----
+                Box quick_connect_view {
+                  orientation: vertical;
+                  spacing: 12;
+
+                  Adw.StatusPage qc_status {
+                    title: _("Quick Connect");
+                    description: _("Open Jellyfin on a signed-in device, go to your profile, choose Quick Connect and enter this code.");
+                  }
+
+                  Label quick_connect_code {
+                    label: "------";
+                    selectable: true;
+
+                    styles ["quick-connect-code"]
+                  }
+
+                  Label qc_error {
+                    visible: false;
+                    wrap: true;
+                    xalign: 0.5;
+
+                    styles ["error"]
+                  }
+
+                  Box {
+                    orientation: horizontal;
+                    spacing: 8;
+                    halign: center;
+
+                    Button quick_connect_copy {
+                      label: _("Copy Code");
+                    }
+
+                    Button qc_retry {
+                      label: _("Try Again");
+                      visible: false;
+                    }
+                  }
+
+                  Adw.PreferencesGroup {
+                    Adw.ActionRow password_switch_row {
+                      activatable: true;
+                      title: _("Use a password instead");
+
+                      [prefix]
+                      Image {
+                        icon-name: "dialog-password-symbolic";
+                      }
+
+                      [suffix]
+                      Image {
+                        icon-name: "go-next-symbolic";
+                      }
+                    }
+                  }
+                }
+
+                // ----- Password view -----
+                Box password_view {
+                  orientation: vertical;
+                  spacing: 12;
+                  visible: false;
+
+                  Adw.PreferencesGroup {
+                    Adw.EntryRow username_entry {
+                      title: _("Username");
+                    }
+
+                    Adw.PasswordEntryRow password_entry {
+                      title: _("Password");
+                    }
+                  }
+
+                  Label password_error {
+                    visible: false;
+                    wrap: true;
+
+                    styles ["error"]
+                  }
+
+                  Box {
+                    orientation: horizontal;
+                    spacing: 8;
+                    halign: center;
+
+                    Button password_back {
+                      label: _("Quick Connect");
+                    }
+
+                    Button password_signin {
+                      label: _("Sign In");
+
+                      styles ["pill", "suggested-action"]
+                    }
+                  }
+                }
+              };
+            };
+          };
+        };
+      }
+    };
+  };
+}
