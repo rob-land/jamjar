@@ -3,31 +3,37 @@
 Ordering follows [`ROADMAP.md`](./ROADMAP.md): Tier 1 (small UX wins) first,
 then Tier 2 (common expectations), then standing items (existing TODOs).
 
+**HIG audit follow-ups still open:** none — library-tab empty states and generic error toasts both wired (see `_observe_windowed` / `_refresh_playlists_stack` in `views/library.py` and `Application.show_toast` in `application.py`).
+
 ---
 
 ## Tier 1 — small effort, big UX win
 
-### 1. Track + album context menus — follow-ups
-`views/track_menu.py` provides `install_track_menu(widget, get_track, app,
-window)` (right-click + long-press), used by album, queue, playlist, and
-library Songs rows. Menu items: Play Now, Play Next, Add to Queue, Go to
+### 1. Track + album context menus — done
+`views/track_menu.py` provides `install_track_menu(...)` (right-click +
+long-press) and `show_track_popover(track, app, window, parent, x, y)`
+for callers without a Track on-hand at gesture time. Used by album,
+queue, playlist, library Songs, and (via lazy fetch + caching) search
+result rows. Menu items: Play Now, Play Next, Add to Queue, Go to
 Album, Go to Artist, Toggle Favorite.
 
-`views/album_menu.py` provides `install_album_menu(...)` for album tiles
-in the library Albums grid, the artist page's albums grid, and the home
-Recently Added row. Menu items: Play Now, Play Next, Add to Queue, Go to
-Artist, Toggle Favorite. Track-list-needing actions go through
-`Library.album_tracks` (cached after first fetch).
+`views/album_menu.py` provides `install_album_menu(...)` for album
+tiles in the library Albums grid, the artist page's albums grid, and
+the home Recently Added row. Menu items: Play Now, Play Next, Add to
+Queue, Go to Artist, Toggle Favorite. Track-list-needing actions go
+through `Library.album_tracks` (cached after first fetch).
 
-Still to do:
-- **Search results.** Search rows only carry a `SearchHit` (`item_id`), not
-  a full Track. Either fetch the Track on right-click before showing the
-  menu, or pre-fetch when binding the row.
+Cross-surface favorite sync via a new `favorite-changed (item_id,
+is_favorite)` signal on `JamjarApplication`, emitted from
+`commit_favorite` after the REST call succeeds. Subscribers: now-playing
+bar + page favorite buttons, album page header, queue page rows
+(`favorite_heart` suffix), album page track rows, playlist page rows
+(via `store.items_changed` to nudge the factory rebind). New
+`favorite_heart(is_favorite)` helper in `views/_common.py` keeps the
+Image visible only when favorited.
+
+Still deferred:
 - **Add to Playlist** menu item — depends on Tier 2 #8.
-- **Visual feedback after Toggle Favorite.** Mutating `track.user_data` /
-  `album.user_data` only updates the next menu open; the row/tile UI
-  itself doesn't reflect the new state. Wire a small heart indicator on
-  each row/tile that updates immediately.
 
 ### 2. Favorite / heart button — done
 Implemented a `ToggleButton` with `emblem-favorite-symbolic` on both the
@@ -48,10 +54,13 @@ pages — Cover and Lyrics — plus indicator dots beneath. Lyrics fetched via
 `fetch_lyrics` on track-changed (placeholder while loading;
 "No lyrics available" if 404/empty). Synced lyrics highlight the active
 line via `lyrics-line.active` based on `position-changed`, using the
-existing `active_index` helper.
+existing `active_index` helper. Active line auto-scrolls into the
+viewport (centered) on each transition; synced lines are clickable to
+seek to that timestamp (`.lyrics-line-clickable` cursor + hover);
+opacity transition smooths the active-line swap; scroll resets to top
+on track change.
 
 Follow-ups:
-- Auto-scroll the lyrics view to keep the active line visible.
 - Queue pane as a third carousel page (originally proposed in DESIGN.md).
 
 ### 4. Volume slider in the bar (desktop) — done
@@ -75,11 +84,19 @@ linearly to 0 over 10 s in 50 ms steps, `Player.pause()` is called, and
 the original volume is restored so the next play session isn't silent.
 Mid-fade cancel restores the original volume immediately.
 
-### 6. Search icon in sidebar header
-Move search from a sidebar destination to a magnifying-glass button in the
-sidebar header (upper-left), matching the standard GNOME pattern (Files,
-Photos, etc.). Toggling it slides down a search bar and focuses it. Keeps
-`Ctrl+F` working.
+### 6. Search button in page headers — done
+Removed `("search", ...)` from `SIDEBAR_PAGES`; SearchPage stays as a
+NavigationView destination but no longer occupies a sidebar slot. Each
+top-level page header now carries a magnifying-glass `Button` bound to
+`app.search`, positioned per GNOME convention: rightmost on pages
+without a page menu (Home, Now Playing, Library — Library was already
+done), and to the left of the page menu where one exists (Queue).
+`Ctrl+F` still works (unchanged accelerator on `app.search`). The
+"slide-down search bar" pattern from the original spec was not added —
+Jamjar's search is global rather than view-filtering, so a separate
+SearchPage destination matches the actual semantics better than a
+contextual filter bar; the header button is the on-brand GNOME hook
+either way.
 
 ---
 
@@ -149,10 +166,19 @@ existing track menu (Play Now / Next / Add to Queue / Go to Album / Go
 to Artist / Toggle Favorite). Album/track tile repaints share a
 `_repaint_row(row, store, tile_builder)` helper.
 
-### 15. Clickable artist and album names
-Wherever an artist name or album name is displayed (track rows, now-playing
-surfaces, album/playlist headers), make those names act as links that
-navigate to the corresponding artist/album page.
+### 15. Clickable artist and album names — done (standalone labels)
+Wired link affordance (`make_link_label`, `open_artist_by_id`,
+`open_album_by_id` in `views/_common.py`; CSS `.link-label:hover {
+text-decoration: underline }`) on the four standalone artist/album
+labels: now-playing bar artist, now-playing page artist + album, and
+album-page header artist. `track_menu.py` and `album_menu.py` were
+refactored to use the same `open_*_by_id` helpers. Click target updates
+on each track-changed; clearing target removes the affordance.
+
+In-list rows (queue / playlist / album / songs ColumnView) deliberately
+left non-clickable — they're activate-to-play surfaces and competing
+inner targets would be confusing. Right-click menu on those rows still
+offers "Go to Artist" / "Go to Album" for navigation.
 
 ### 16. Persistent response cache for library JSON + manual refresh
 On a large collection, every cold start re-fetches Albums / Artists / Songs /

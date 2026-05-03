@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Optional
+from typing import Callable, Optional
 
 import gi
 gi.require_version("Gtk", "4.0")
@@ -11,6 +11,7 @@ gi.require_version("Adw", "1")
 from gi.repository import Adw, Gdk, GdkPixbuf, GLib, Gio, Gtk
 
 from .. import imagecache
+from ..models import album_from_json, artist_from_json
 
 log = logging.getLogger(__name__)
 
@@ -42,13 +43,28 @@ def apply_favorite_visual(button: Gtk.Button, is_favorite: bool) -> None:
         button.remove_css_class("accent")
 
 
+def favorite_heart(is_favorite: bool) -> Gtk.Image:
+    """Build a small accent-colored heart suffix for an Adw.ActionRow.
+
+    Visible only when `is_favorite` is True; toggle visibility (not the
+    icon) to reflect state changes — that keeps the row layout stable
+    instead of a heart-outline + heart-filled swap that nudges siblings.
+    """
+    img = Gtk.Image.new_from_icon_name("emblem-favorite-symbolic")
+    img.add_css_class("accent")
+    img.set_visible(bool(is_favorite))
+    return img
+
+
 def commit_favorite(client, item, new_state: bool, runner,
-                    on_failure=None) -> None:
+                    on_failure=None, app=None) -> None:
     """Fire the set_favorite REST call asynchronously for any item with `id`
     and `user_data` (Track/Album/Artist). On success, mutate
     `item.user_data['IsFavorite']` so other surfaces read the up-to-date
-    state at next open. On failure, call `on_failure` from the GTK thread
-    so the caller's toggle can revert.
+    state at next open, and emit `favorite-changed` on `app` if provided
+    so live surfaces (row hearts, bar / now-playing toggles) sync without
+    re-fetching. On failure, call `on_failure` from the GTK thread so the
+    caller's toggle can revert.
     """
     async def runme():
         await client.set_favorite(item.id, new_state)
@@ -62,6 +78,8 @@ def commit_favorite(client, item, new_state: bool, runner,
                 GLib.idle_add(lambda: (on_failure(), False)[1])
             return
         item.user_data["IsFavorite"] = new_state
+        if app is not None:
+            app.emit_favorite_changed(item.id, new_state)
 
     runner.submit(runme()).add_done_callback(done)
 
@@ -184,3 +202,75 @@ def _fit_to_request(pixbuf: GdkPixbuf.Pixbuf, picture: Gtk.Picture) -> GdkPixbuf
     if pixbuf.get_width() <= target_w and pixbuf.get_height() <= target_h:
         return pixbuf
     return pixbuf.scale_simple(target_w, target_h, GdkPixbuf.InterpType.BILINEAR)
+
+
+# ------- navigation helpers (clickable artist/album labels) -------
+
+def open_artist_by_id(window, app, artist_id: str) -> None:
+    """Fetch an artist by id from Jellyfin and push the artist page."""
+    if not artist_id or app.client is None:
+        return
+
+    async def fetch():
+        return await app.client.get_item(artist_id)
+
+    def done(future):
+        try:
+            item = future.result()
+        except Exception as e:
+            log.warning("failed to fetch artist %s: %s", artist_id, e)
+            return
+        GLib.idle_add(lambda: (window.open_artist(artist_from_json(item)),
+                               False)[1])
+
+    app.runner.submit(fetch()).add_done_callback(done)
+
+
+def open_album_by_id(window, app, album_id: str) -> None:
+    """Fetch an album by id from Jellyfin and push the album page."""
+    if not album_id or app.client is None:
+        return
+
+    async def fetch():
+        return await app.client.get_item(album_id)
+
+    def done(future):
+        try:
+            item = future.result()
+        except Exception as e:
+            log.warning("failed to fetch album %s: %s", album_id, e)
+            return
+        GLib.idle_add(lambda: (window.open_album(album_from_json(item)),
+                               False)[1])
+
+    app.runner.submit(fetch()).add_done_callback(done)
+
+
+def make_link_label(label: Gtk.Label, target: Optional[Callable[[], None]]) -> None:
+    """Wire `label` as a clickable link.
+
+    `target` is invoked on click. Pass `None` to remove the link affordance
+    (gesture stays attached but does nothing — re-call with a non-None
+    target to re-enable). The first call attaches a single
+    `Gtk.GestureClick`; later calls just swap the target, so this is safe
+    to invoke on every rebind for recycled widgets.
+    """
+    label._jamjar_link_target = target
+    if target is None:
+        label.remove_css_class("link-label")
+        label.set_cursor(None)
+        return
+    label.add_css_class("link-label")
+    label.set_cursor(Gdk.Cursor.new_from_name("pointer", None))
+    if getattr(label, "_jamjar_link_wired", False):
+        return
+    label._jamjar_link_wired = True
+
+    def _on_release(_g, _n, _x, _y):
+        cb = getattr(label, "_jamjar_link_target", None)
+        if cb is not None:
+            cb()
+
+    gesture = Gtk.GestureClick.new()
+    gesture.connect("released", _on_release)
+    label.add_controller(gesture)

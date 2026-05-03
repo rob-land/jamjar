@@ -4,7 +4,7 @@ A full-featured Jellyfin music client for **GNOME desktop** and **Phosh** (Linux
 
 App ID: `land.rob.Jamjar`
 
-This file is the orientation document for Claude Code working on this repo. The full architecture is in [`DESIGN.md`](./DESIGN.md) — read that first for any non-trivial change.
+This file is the orientation document for Claude Code working on this repo. The full architecture is in [`jamjar-design.md`](./jamjar-design.md) — read that first for any non-trivial change. The current backlog is [`TODO.md`](./TODO.md); the prioritisation rationale is [`ROADMAP.md`](./ROADMAP.md).
 
 ---
 
@@ -42,7 +42,9 @@ This file is the orientation document for Claude Code working on this repo. The 
 jamjar/
 ├── meson.build
 ├── CLAUDE.md                        # this file
-├── DESIGN.md                        # full architecture doc
+├── jamjar-design.md                 # full architecture doc
+├── ROADMAP.md                       # tier ranking and rationale
+├── TODO.md                          # current backlog
 ├── README.md
 ├── flatpak/
 │   └── land.rob.Jamjar.yml
@@ -50,35 +52,48 @@ jamjar/
 │   ├── land.rob.Jamjar.desktop.in
 │   ├── land.rob.Jamjar.metainfo.xml.in
 │   ├── land.rob.Jamjar.gschema.xml
-│   ├── icons/hicolor/scalable/apps/land.rob.Jamjar.svg
-│   └── ui/                          # Blueprint sources
+│   ├── icons/hicolor/
+│   │   ├── scalable/apps/land.rob.Jamjar.svg
+│   │   ├── scalable/actions/heart-outline-symbolic.svg
+│   │   └── symbolic/apps/land.rob.Jamjar-symbolic.svg
+│   ├── screenshots/                 # referenced by metainfo.xml.in
+│   └── ui/                          # Blueprint sources → .ui → GResource
 │       ├── window.blp
 │       ├── server-row.blp
 │       ├── login-dialog.blp
 │       ├── library-page.blp
 │       ├── album-page.blp
-│       ├── now-playing.blp
+│       ├── artist-page.blp
+│       ├── playlist-page.blp
+│       ├── home-page.blp
+│       ├── search-page.blp
+│       ├── now-playing-bar.blp
+│       ├── now-playing-page.blp
 │       ├── queue-pane.blp
-│       └── prefs.blp
+│       ├── prefs.blp
+│       └── help-overlay.blp         # Gtk.ShortcutsWindow
 ├── po/
 └── jamjar/
     ├── __init__.py
     ├── main.py                      # Application entry
-    ├── application.py               # Adw.Application subclass
-    ├── window.py                    # Main window, breakpoints
+    ├── application.py               # Adw.Application subclass + signals
+    ├── window.py                    # Main window, breakpoints, help overlay
     ├── discovery.py                 # UDP + Zeroconf
     ├── auth.py                      # Password + Quick Connect
     ├── secrets.py                   # libsecret wrapper
-    ├── client.py                    # Async Jellyfin REST client
+    ├── client.py                    # Async Jellyfin REST client + 401 hook
     ├── models.py                    # Track, Album, Artist, Playlist
-    ├── library.py                   # Caching, paginated lists
+    ├── library.py                   # WindowedListModel + per-tab stores
+    ├── imagecache.py                # On-disk cover/artist art cache (LRU)
+    ├── sleep_timer.py               # Countdown + linear fade-out
     ├── player.py                    # GStreamer pipeline
     ├── queue.py                     # Play queue + shuffle/repeat
     ├── mpris.py                     # MPRIS2 D-Bus
     ├── scrobble.py                  # /Sessions/Playing reporting
     ├── lyrics.py                    # /Items/{id}/Lyrics
-    ├── offline.py                   # Sync/download manager
+    ├── offline.py                   # Sync/download manager (placeholder)
     └── views/
+        ├── _common.py               # shared helpers (toasts, links, hearts)
         ├── home.py
         ├── library.py
         ├── album.py
@@ -87,7 +102,11 @@ jamjar/
         ├── search.py
         ├── now_playing.py
         ├── queue.py
-        └── prefs.py
+        ├── prefs.py
+        ├── login.py
+        ├── track_menu.py            # right-click context menu (tracks)
+        ├── album_menu.py            # right-click context menu (albums)
+        └── sleep_timer.py           # sleep-timer Adw.AlertDialog
 ```
 
 ---
@@ -198,10 +217,13 @@ The login dialog shows server-discovery results as `Adw.ActionRow`s, then offers
 | User views | `GET` | `/UserViews` |
 | Recently added | `GET` | `/Users/{u}/Items/Latest?IncludeItemTypes=Audio` |
 | Albums | `GET` | `/Items?IncludeItemTypes=MusicAlbum&Recursive=true` |
-| Artists | `GET` | `/Artists` |
+| Artists (album-artists only) | `GET` | `/Artists/AlbumArtists` |
 | Album tracks | `GET` | `/Items?ParentId={albumId}&SortBy=ParentIndexNumber,IndexNumber` |
 | Playlists | `GET` | `/Items?IncludeItemTypes=Playlist` |
 | Search | `GET` | `/Search/Hints?searchTerm=...&IncludeItemTypes=Audio,MusicAlbum,MusicArtist` |
+| Recently played | `GET` | `/Items?IncludeItemTypes=Audio&SortBy=DatePlayed&SortOrder=Descending&Filters=IsPlayed` |
+| Suggestions | `GET` | `/Users/{u}/Suggestions?mediaType=Audio` |
+| Item by id | `GET` | `/Users/{u}/Items/{id}` (used for click-through nav from track artists/albums) |
 | Stream URL | `GET` | `/Audio/{id}/universal?api_key=...&audioCodec=...&maxStreamingBitrate=...` |
 | Cover art | `GET` | `/Items/{id}/Images/Primary?maxWidth=512&tag={tag}` |
 | Lyrics | `GET` | `/Audio/{id}/Lyrics` |
@@ -211,6 +233,10 @@ The login dialog shows server-discovery results as `Adw.ActionRow`s, then offers
 | Mark favorite | `POST/DELETE` | `/Users/{u}/FavoriteItems/{id}` |
 
 For offline downloads, use `/Audio/{id}/universal?static=true` to bypass transcoding.
+
+**Library list queries** all pass `EnableTotalRecordCount=false` (Jellyfin's count pass is expensive on big libraries) and use `WindowedListModel` (`library.py`) for on-demand pagination — first page 50 items, subsequent pages 200, with a 40-item lookahead trigger. The model exposes `set_filter(name_starts_with=..., name_less_than=...)` for jump-to-letter, a generation counter for stale-fetch suppression, and a `load-state-changed` signal so views can show empty states only after a definitive empty load.
+
+**Client 401 handling.** `JellyfinClient` accepts an `on_unauthorized` callback that fires on any 401; the application wires this to a single dispatcher that clears the libsecret token, detaches the session, shows a toast, and re-presents the login dialog (deduped via `client is None` guard so parallel 401s collapse to one re-prompt).
 
 ---
 
@@ -271,21 +297,21 @@ Notable: `--talk-name=org.freedesktop.secrets` for libsecret access, and the two
 
 ## Roadmap
 
-- **v0.1** — Discovery, both auth flows, library browsing (Albums/Artists/Songs/Playlists), basic playback, queue, MPRIS, scrobbling.
-- **v0.2** — Search, lyrics, favorites, playlist editing, equalizer, sleep timer, GNOME Shell search provider.
-- **v0.3** — Offline downloads, multi-server switching, ReplayGain UI, ListenBrainz passthrough, Phosh lockscreen artwork polish.
-- **v0.4** — Cast support (UPnP/DLNA via `gupnp`), "driving" view for the NexDock dock, smart playlists.
+- **v0.1 (shipped)** — Discovery, both auth flows, library browsing (Albums/Artists/Songs/Playlists), basic playback, queue, MPRIS, scrobbling.
+- **v0.2 (in progress)** — Search ✅, lyrics ✅ (with synced highlighting + auto-scroll + click-to-seek), favorites ✅ (with cross-surface sync), sleep timer ✅, volume slider ✅, jump-to-letter ✅, image cache ✅, paginated library ✅, recently played + suggestions ✅, track + album context menus ✅, clickable artist/album labels ✅, GNOME HIG polish (shortcuts overlay, symbolic icon, header search, empty states, error toasts, screenshots/branding in metainfo) ✅. Still open: drag-to-reorder queue, playlist editing, sort/filter on Library pages, up-next preview popover, dedicated history page, JSON cache + manual refresh.
+- **v0.3** — Offline downloads, multi-server switching, ReplayGain UI, ListenBrainz passthrough, Phosh lockscreen artwork polish, GNOME Shell search provider.
+- **v0.4** — Cast support (UPnP/DLNA via `gupnp`), "driving" view for the NexDock dock, smart playlists, genre/era/mood radio.
 
 ---
 
 ## Working with Claude Code on this repo
 
-- The design doc (`DESIGN.md`) is the source of truth for architecture. If a requested change conflicts with it, flag the conflict and ask before diverging.
+- The design doc (`jamjar-design.md`) is the source of truth for architecture. If a requested change conflicts with it, flag the conflict and ask before diverging.
 - Prefer **small, focused commits** that touch one concern at a time (e.g., "discovery: add mDNS fallback" not "discovery + auth + window changes").
 - For new modules, follow the layout above. New views go under `jamjar/views/`, with a matching `.blp` under `data/ui/`.
 - When adding a Python dep, also add it to the `flatpak-pip-generator` input list and regenerate the JSON. Don't hand-edit the generated JSON.
 - Run a quick sanity build (`meson setup build && ninja -C build`) before declaring a change complete. For UI changes, also do a Flatpak build at least once before merging.
-- Keep `DESIGN.md` updated when architectural decisions change. CLAUDE.md should stay short and conventions-focused; longer prose belongs in DESIGN.md.
+- Keep `jamjar-design.md` updated when architectural decisions change. CLAUDE.md should stay short and conventions-focused; longer prose belongs in `jamjar-design.md`.
 
 ---
 

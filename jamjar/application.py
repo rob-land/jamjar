@@ -3,13 +3,15 @@
 from __future__ import annotations
 
 import logging
+import time
 import uuid
+from gettext import gettext as _
 from typing import Optional
 
 import gi
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Adw, Gio, GLib, Gtk
+from gi.repository import Adw, Gio, GLib, GObject, Gtk
 
 from . import __version__, imagecache
 from .auth import new_device_id
@@ -29,6 +31,13 @@ APP_ID = "land.rob.Jamjar"
 
 class JamjarApplication(Adw.Application):
     __gtype_name__ = "JamjarApplication"
+    __gsignals__ = {
+        # Emitted after a successful favorite toggle on any item (track,
+        # album, artist). Surfaces displaying the same item subscribe and
+        # update their visual without each having to round-trip through
+        # the server. Args: (item_id, is_favorite).
+        "favorite-changed": (GObject.SignalFlags.RUN_FIRST, None, (str, bool)),
+    }
 
     def __init__(self) -> None:
         super().__init__(
@@ -51,6 +60,10 @@ class JamjarApplication(Adw.Application):
         self.mpris: Optional[MprisService] = None
         self.sleep_timer = SleepTimer()
         self._holding = False
+        # Per-message dedup so a wave of related failures (e.g. losing
+        # network mid-prefetch) doesn't stack four toasts on the user.
+        self._last_toast_message: str = ""
+        self._last_toast_at: float = 0.0
 
     # ------- lifecycle -------
 
@@ -83,7 +96,7 @@ class JamjarApplication(Adw.Application):
         """Called after a successful login or token restore."""
         self.client = client
         client.on_unauthorized = self._on_client_unauthorized
-        self.library = Library(client, self.runner)
+        self.library = Library(client, self.runner, on_error=self.show_toast)
         self.queue = PlayQueue(client)
         self.player = Player(self.queue)
         self.scrobbler = Scrobbler(client, self.player, self.queue, self.runner)
@@ -118,6 +131,51 @@ class JamjarApplication(Adw.Application):
         self.mpris = None
         self._release_hold()
         self._update_session_actions()
+
+    # ------- favorite cross-surface sync -------
+
+    def emit_favorite_changed(self, item_id: str, is_favorite: bool) -> None:
+        """Broadcast a favorite-state change to all subscribed surfaces.
+
+        Safe to call from any thread; idle_adds onto the GTK loop before
+        emitting. Callers should invoke this only after the server has
+        confirmed the change so subscribers don't show false-positive
+        states on REST failures.
+        """
+        GLib.idle_add(self._do_emit_favorite, item_id, is_favorite)
+
+    def _do_emit_favorite(self, item_id: str, is_favorite: bool) -> bool:
+        self.emit("favorite-changed", item_id, is_favorite)
+        return False
+
+    # ------- toast helper -------
+
+    TOAST_DEDUP_SECONDS = 5.0
+
+    def show_toast(self, message: str, *, timeout: int = 4) -> None:
+        """Display a transient toast on the active window.
+
+        Safe to call from any thread; marshals to the GTK loop. Suppresses
+        the same message within `TOAST_DEDUP_SECONDS` of its previous
+        appearance so failure waves (e.g. several sections failing at
+        once when the network drops) don't stack toasts.
+        """
+        def emit() -> bool:
+            now = time.monotonic()
+            if (message == self._last_toast_message
+                    and now - self._last_toast_at < self.TOAST_DEDUP_SECONDS):
+                return False
+            self._last_toast_message = message
+            self._last_toast_at = now
+            win = self.props.active_window
+            if win is None or not hasattr(win, "toast_overlay"):
+                return False
+            toast = Adw.Toast.new(message)
+            toast.set_timeout(timeout)
+            win.toast_overlay.add_toast(toast)
+            return False
+
+        GLib.idle_add(emit)
 
     # ------- session-lost handling -------
 
@@ -197,6 +255,8 @@ class JamjarApplication(Adw.Application):
         self.set_accels_for_action("app.next",        ["<Primary>Right"])
         self.set_accels_for_action("app.previous",    ["<Primary>Left"])
         self.set_accels_for_action("app.preferences", ["<Primary>comma"])
+        self.set_accels_for_action("win.show-help-overlay",
+                                   ["<Primary>question"])
         # Bare space is bound at the window level, not as an app accel, so
         # text entries (search, etc.) can still receive space characters.
 
@@ -246,12 +306,18 @@ class JamjarApplication(Adw.Application):
         about = Adw.AboutDialog(
             application_name="Jamjar",
             application_icon=APP_ID,
-            developer_name="Rob",
+            developer_name="Rob Daniel",
+            developers=["Rob Daniel"],
             version=__version__,
-            website="https://github.com/rob/jamjar",
-            issue_url="https://github.com/rob/jamjar/issues",
+            website="https://codeberg.org/robland/jamjar",
+            issue_url="https://codeberg.org/robland/jamjar/issues",
             license_type=Gtk.License.GPL_3_0,
+            copyright="© 2026 Rob Daniel",
             comments="A Jellyfin music client for GNOME and Phosh.",
+            # The literal "translator-credits" string is the canonical
+            # i18n marker. Translators replace it with their own names;
+            # untranslated, Adw.AboutDialog hides the credits panel.
+            translator_credits=_("translator-credits"),
         )
         about.present(self.props.active_window)
 

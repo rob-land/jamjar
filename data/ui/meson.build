@@ -14,6 +14,7 @@ blueprint_sources = files(
   'now-playing-page.blp',
   'queue-pane.blp',
   'prefs.blp',
+  'help-overlay.blp',
 )
 
 blueprints = custom_target('blueprints',

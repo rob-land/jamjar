@@ -28,9 +28,18 @@
 .lyrics-line {
   padding: 4px 0;
   opacity: 0.55;
+  transition: opacity 200ms ease-out;
 }
 
 .lyrics-line.active {
   opacity: 1;
   font-weight: bold;
+}
+
+.lyrics-line-clickable:hover {
+  opacity: 0.9;
+}
+
+.link-label:hover {
+  text-decoration: underline;
 }

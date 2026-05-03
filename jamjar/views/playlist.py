@@ -9,7 +9,7 @@ gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Adw, Gio, Gtk
 
-from ._common import format_duration
+from ._common import favorite_heart, format_duration
 from .track_menu import install_track_menu
 
 if TYPE_CHECKING:
@@ -48,6 +48,8 @@ class PlaylistPage(Adw.NavigationPage):
         self.playlist_tracks.set_factory(factory)
         self.playlist_tracks.connect("activate", self._row_activated)
 
+        app.connect("favorite-changed", self._on_favorite_changed_external)
+
         app.runner.submit(self._load())
 
     async def _load(self) -> None:
@@ -70,13 +72,16 @@ class PlaylistPage(Adw.NavigationPage):
         title.add_css_class("heading")
         artist = Gtk.Label(xalign=0, ellipsize=3, hexpand=False, width_chars=20)
         artist.add_css_class("dim-label")
+        heart = favorite_heart(False)
         duration = Gtk.Label(xalign=1)
         duration.add_css_class("dim-label")
         box.append(title)
         box.append(artist)
+        box.append(heart)
         box.append(duration)
         item.set_child(box)
-        item.title_label, item.artist_label, item.duration_label = title, artist, duration
+        item.title_label, item.artist_label = title, artist
+        item.heart, item.duration_label = heart, duration
         install_track_menu(box,
                            lambda it=item: (it.get_item().payload
                                             if it.get_item() else None),
@@ -86,7 +91,17 @@ class PlaylistPage(Adw.NavigationPage):
         track = item.get_item().payload
         item.title_label.set_label(track.name)
         item.artist_label.set_label(track.primary_artist)
+        item.heart.set_visible(bool(track.user_data.get("IsFavorite")))
         item.duration_label.set_label(format_duration(track.duration_seconds))
+
+    def _on_favorite_changed_external(self, _app, item_id: str, is_favorite: bool) -> None:
+        # Nudge the store so the factory rebinds the affected rows and the
+        # heart visibility refreshes via _row_bind reading user_data
+        # (which commit_favorite has already mutated).
+        for i in range(self.store.get_n_items()):
+            track = self.store.get_item(i).payload
+            if track.id == item_id:
+                self.store.items_changed(i, 1, 1)
 
     def _row_activated(self, _view, position) -> None:
         if not self.tracks or position >= len(self.tracks):

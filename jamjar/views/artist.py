@@ -111,5 +111,5 @@ class ArtistPage(Adw.NavigationPage):
             return
         new_state = button.get_active()
         apply_favorite_visual(button, new_state)
-        commit_favorite(self.app.client, self.artist, new_state, self.app.runner,
+        commit_favorite(self.app.client, self.artist, new_state, self.app.runner, app=self.app,
                         on_failure=lambda: self._sync_favorite(not new_state))

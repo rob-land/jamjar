@@ -35,6 +35,10 @@ class LibraryPage(Adw.NavigationPage):
     artists_grid    = Gtk.Template.Child()
     songs_column    = Gtk.Template.Child()
     playlists_list  = Gtk.Template.Child()
+    albums_stack    = Gtk.Template.Child()
+    artists_stack   = Gtk.Template.Child()
+    songs_stack     = Gtk.Template.Child()
+    playlists_stack = Gtk.Template.Child()
 
     def __init__(self, app: "JamjarApplication", window: "JamjarWindow") -> None:
         super().__init__()
@@ -169,6 +173,7 @@ class LibraryPage(Adw.NavigationPage):
         self.albums_grid.set_model(Gtk.NoSelection.new(store))
         self.albums_grid.set_factory(factory)
         self.albums_grid.connect("activate", self._album_activated)
+        self._observe_windowed(store, self.albums_stack)
 
     def _album_setup(self, _factory, item) -> None:
         box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6,
@@ -223,6 +228,7 @@ class LibraryPage(Adw.NavigationPage):
         self.artists_grid.set_model(Gtk.NoSelection.new(store))
         self.artists_grid.set_factory(factory)
         self.artists_grid.connect("activate", self._artist_activated)
+        self._observe_windowed(store, self.artists_stack)
 
     def _artist_setup(self, _factory, item) -> None:
         box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6,
@@ -262,6 +268,7 @@ class LibraryPage(Adw.NavigationPage):
         store = self.app.library.songs
         selection = Gtk.NoSelection.new(store)
         self.songs_column.set_model(selection)
+        self._observe_windowed(store, self.songs_stack)
 
         for title, attr in (("Title", "name"), ("Artist", "primary_artist"),
                             ("Album", "album"), ("Duration", "duration_seconds")):
@@ -311,6 +318,27 @@ class LibraryPage(Adw.NavigationPage):
     def _wire_playlists(self) -> None:
         store = self.app.library.playlists
         store.connect("items-changed", self._on_playlists_changed)
+        # Plain Gio.ListStore doesn't have a load-state signal. Default to
+        # "list" during the initial cold-load gap so the empty state isn't
+        # flashed; flip on the first items-changed (which lands even when
+        # the response is empty, since `_replace` always removes-all first).
+        self.playlists_stack.set_visible_child_name("list")
+        store.connect("items-changed", self._refresh_playlists_stack)
+
+    # ------- empty-state stack toggles -------
+
+    def _observe_windowed(self, store, stack: Gtk.Stack) -> None:
+        def refresh(*_):
+            stack.set_visible_child_name(
+                "empty" if store.is_empty_after_load else "list"
+            )
+        store.connect("items-changed", refresh)
+        store.connect("load-state-changed", refresh)
+        refresh()
+
+    def _refresh_playlists_stack(self, store, _pos, _removed, _added) -> None:
+        empty = store.get_n_items() == 0
+        self.playlists_stack.set_visible_child_name("empty" if empty else "list")
 
     def _on_playlists_changed(self, store, _pos, _removed, _added) -> None:
         for child in list(self.playlists_list):

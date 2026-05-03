@@ -25,11 +25,14 @@ log = logging.getLogger(__name__)
 SIDEBAR_PAGES: list[tuple[str, str, str]] = [
     ("home",        "user-home-symbolic",                    "Home"),
     ("library",     "folder-music-symbolic",                 "Library"),
-    ("search",      "system-search-symbolic",                "Search"),
     ("now-playing", "media-playback-start-symbolic",         "Now Playing"),
     ("queue",       "view-list-symbolic",                    "Queue"),
     ("downloaded",  "folder-download-symbolic",              "Downloaded"),
 ]
+# Search is reachable from the magnifying-glass button on each top-level
+# page's header (matches the GNOME convention) and via Ctrl+F. It's still
+# a NavigationView destination — `_build_page` builds the SearchPage —
+# but no longer occupies a sidebar slot.
 
 
 @Gtk.Template(resource_path="/land/rob/Jamjar/window.ui")
@@ -48,6 +51,7 @@ class JamjarWindow(Adw.ApplicationWindow):
         self.app: "JamjarApplication" = self.get_application()  # type: ignore[assignment]
         self._pages: dict[str, Adw.NavigationPage] = {}
         self._current_top_level: str = "home"
+        self._install_help_overlay()
         self._build_sidebar()
 
         self.connect("close-request", self._on_close_request)
@@ -75,6 +79,15 @@ class JamjarWindow(Adw.ApplicationWindow):
         GLib.idle_add(self._post_present)
 
     # ------- bootstrap -------
+
+    def _install_help_overlay(self) -> None:
+        # The "Keyboard Shortcuts" primary-menu entry uses
+        # `win.show-help-overlay`, which Gtk.ApplicationWindow auto-registers
+        # once a help overlay is set on the window.
+        builder = Gtk.Builder.new_from_resource("/land/rob/Jamjar/help-overlay.ui")
+        overlay = builder.get_object("help_overlay")
+        if overlay is not None:
+            self.set_help_overlay(overlay)
 
     def _post_present(self) -> bool:
         if not self.app.try_restore_session():

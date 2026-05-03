@@ -8,12 +8,13 @@ from typing import TYPE_CHECKING, Optional
 import gi
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Adw, GLib, GObject, Gtk
+from gi.repository import Adw, Gdk, GLib, GObject, Gtk
 
 from ..lyrics import Lyrics, active_index, fetch_lyrics
 from ..queue import RepeatMode
 from ._common import (apply_favorite_visual, commit_favorite, format_duration,
-                       load_remote_image_async)
+                       load_remote_image_async, make_link_label,
+                       open_album_by_id, open_artist_by_id)
 
 if TYPE_CHECKING:
     from ..application import JamjarApplication
@@ -83,6 +84,10 @@ class NowPlayingBar(Gtk.Box):
         player.connect("state-changed",    self._on_state)
         queue.connect("notify::shuffle",   lambda *_: self._sync_shuffle())
         queue.connect("notify::repeat",    lambda *_: self._sync_repeat())
+        win = self.get_root()
+        app = win.get_application() if win else None
+        if app is not None:
+            app.connect("favorite-changed", self._on_favorite_changed_external)
         # Pull current state so a freshly-built bar reflects what's playing.
         self._on_track(player, queue.current)
         self._on_state(player, "playing" if player.is_playing else "paused")
@@ -104,6 +109,7 @@ class NowPlayingBar(Gtk.Box):
         if track is None:
             self.title_label.set_label("")
             self.artist_label.set_label("")
+            make_link_label(self.artist_label, None)
             self.cover.set_paintable(None)
             self._suppress_seek = True
             self.progress_adjustment.set_value(0.0)
@@ -117,6 +123,7 @@ class NowPlayingBar(Gtk.Box):
         self.favorite_button.set_sensitive(True)
         self.title_label.set_label(track.name)
         self.artist_label.set_label(track.primary_artist)
+        self._wire_artist_link(track)
         if (track.album_image_tag or track.image_tag) and self.client:
             url = self.client.cover_url(
                 track.album_id or track.id,
@@ -132,6 +139,16 @@ class NowPlayingBar(Gtk.Box):
             self._duration = track.duration_seconds
             self.progress_adjustment.set_upper(track.duration_seconds)
             self.duration_label.set_label(format_duration(track.duration_seconds))
+
+    def _wire_artist_link(self, track) -> None:
+        win = self.get_root()
+        app = win.get_application() if win else None
+        if track.artist_ids and app is not None and win is not None:
+            artist_id = track.artist_ids[0]
+            make_link_label(self.artist_label,
+                            lambda aid=artist_id: open_artist_by_id(win, app, aid))
+        else:
+            make_link_label(self.artist_label, None)
 
     def _on_position(self, _player, seconds: float) -> None:
         self._suppress_seek = True
@@ -176,9 +193,19 @@ class NowPlayingBar(Gtk.Box):
             return
         new_state = button.get_active()
         apply_favorite_visual(button, new_state)
+        app = self.get_root().get_application() if self.get_root() else None
         commit_favorite(self.client, track, new_state,
-                         self.get_root().get_application().runner,
-                         on_failure=lambda: self._sync_favorite(not new_state))
+                         app.runner if app else None,
+                         on_failure=lambda: self._sync_favorite(not new_state),
+                         app=app)
+
+    def _on_favorite_changed_external(self, _app, item_id: str, is_favorite: bool) -> None:
+        # A favorite toggle landed somewhere else (row menu, page, etc.).
+        # Sync the bar's heart if it matches the current track.
+        if self.queue is None or self.queue.current is None:
+            return
+        if self.queue.current.id == item_id:
+            self._sync_favorite(is_favorite)
 
     def _on_shuffle_toggled(self, button) -> None:
         if self.queue is None:
@@ -309,6 +336,7 @@ class NowPlayingPage(Adw.NavigationPage):
         self.np_shuffle.connect("toggled", self._on_shuffle_toggled)
         self.np_repeat.connect("clicked", self._on_repeat_clicked)
         self.favorite_button.connect("toggled", self._on_favorite_toggled)
+        app.connect("favorite-changed", self._on_favorite_changed_external)
 
         # Prime initial state.
         if app.player and app.queue:
@@ -322,6 +350,8 @@ class NowPlayingPage(Adw.NavigationPage):
             self.np_title.set_label("")
             self.np_artist.set_label("")
             self.np_album.set_label("")
+            make_link_label(self.np_artist, None)
+            make_link_label(self.np_album, None)
             self.full_cover.set_paintable(None)
             self._sync_favorite(False)
             self.favorite_button.set_sensitive(False)
@@ -332,6 +362,18 @@ class NowPlayingPage(Adw.NavigationPage):
         self.np_title.set_label(track.name)
         self.np_artist.set_label(track.primary_artist)
         self.np_album.set_label(track.album)
+        if track.artist_ids:
+            artist_id = track.artist_ids[0]
+            make_link_label(self.np_artist,
+                            lambda aid=artist_id: open_artist_by_id(self.window, self.app, aid))
+        else:
+            make_link_label(self.np_artist, None)
+        if track.album_id:
+            album_id = track.album_id
+            make_link_label(self.np_album,
+                            lambda aid=album_id: open_album_by_id(self.window, self.app, aid))
+        else:
+            make_link_label(self.np_album, None)
         self._fetch_lyrics(track)
         if (track.album_image_tag or track.image_tag) and self.app.client:
             url = self.app.client.cover_url(
@@ -387,7 +429,14 @@ class NowPlayingPage(Adw.NavigationPage):
         new_state = button.get_active()
         apply_favorite_visual(button, new_state)
         commit_favorite(self.app.client, track, new_state, self.app.runner,
-                         on_failure=lambda: self._sync_favorite(not new_state))
+                         on_failure=lambda: self._sync_favorite(not new_state),
+                         app=self.app)
+
+    def _on_favorite_changed_external(self, _app, item_id: str, is_favorite: bool) -> None:
+        if self.app.queue is None or self.app.queue.current is None:
+            return
+        if self.app.queue.current.id == item_id:
+            self._sync_favorite(is_favorite)
 
     # ------- lyrics -------
 
@@ -438,8 +487,28 @@ class NowPlayingPage(Adw.NavigationPage):
         for line in lyrics.lines:
             label = Gtk.Label(label=line.text or " ", xalign=0.5, wrap=True)
             label.add_css_class("lyrics-line")
+            if line.seconds is not None:
+                # Synced line: clickable to seek to the timestamp.
+                label.add_css_class("lyrics-line-clickable")
+                label.set_cursor(Gdk.Cursor.new_from_name("pointer", None))
+                gesture = Gtk.GestureClick.new()
+                gesture.connect(
+                    "released",
+                    lambda _g, _n, _x, _y, t=line.seconds: self._seek_to_lyric(t),
+                )
+                label.add_controller(gesture)
             self.lyrics_box.append(label)
             self._lyric_labels.append(label)
+        # New lyrics: reset scroll to the top so the song starts from the
+        # beginning of its lyrics, not wherever the previous song left off.
+        sw = self.lyrics_box.get_parent()
+        if isinstance(sw, Gtk.ScrolledWindow):
+            sw.get_vadjustment().set_value(0)
+
+    def _seek_to_lyric(self, seconds: float) -> None:
+        if self.app.player is None:
+            return
+        self.app.player.seek(seconds)
 
     def _update_lyric_highlight(self, seconds: float) -> None:
         if self._lyrics is None or not self._lyrics.synced or not self._lyric_labels:
@@ -453,6 +522,30 @@ class NowPlayingPage(Adw.NavigationPage):
         self._active_lyric_index = idx
         if idx is not None and 0 <= idx < len(self._lyric_labels):
             self._lyric_labels[idx].add_css_class("active")
+            self._scroll_active_into_view(idx)
+
+    def _scroll_active_into_view(self, idx: int) -> None:
+        label = self._lyric_labels[idx]
+        sw = self.lyrics_box.get_parent()
+        if not isinstance(sw, Gtk.ScrolledWindow):
+            return
+
+        # Defer to idle: on the first highlight after a track change the
+        # newly-appended labels haven't been allocated yet, so their y/height
+        # are still 0. By idle-time the layout pass has run.
+        def do_scroll() -> bool:
+            vadj = sw.get_vadjustment()
+            alloc = label.get_allocation()
+            if alloc.height <= 0:
+                return False
+            page = vadj.get_page_size()
+            target = alloc.y + alloc.height / 2 - page / 2
+            upper = max(0.0, vadj.get_upper() - page)
+            target = max(0.0, min(target, upper))
+            vadj.set_value(target)
+            return False
+
+        GLib.idle_add(do_scroll)
 
     def _on_shuffle_toggled(self, button) -> None:
         if self.app.queue is None:

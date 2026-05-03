@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+  <g fill="#222222">
+    <!-- Lid -->
+    <rect x="3.5" y="1.25" width="9" height="2" rx="0.6"/>
+    <!-- Jar body, hollow rounded rectangle via even-odd fill rule -->
+    <path fill-rule="evenodd" d="M2.75 5.5 a1.75 1.75 0 0 1 1.75 -1.75 h7 a1.75 1.75 0 0 1 1.75 1.75 v7 a1.75 1.75 0 0 1 -1.75 1.75 h-7 a1.75 1.75 0 0 1 -1.75 -1.75 z m1 0.25 v6.75 a0.75 0.75 0 0 0 0.75 0.75 h6.5 a0.75 0.75 0 0 0 0.75 -0.75 v-6.75 a0.75 0.75 0 0 0 -0.75 -0.75 h-6.5 a0.75 0.75 0 0 0 -0.75 0.75 z"/>
+    <!-- Music note: stem -->
+    <rect x="6.875" y="6.5" width="0.6" height="3.75"/>
+    <!-- Music note: head (filled ellipse) -->
+    <ellipse cx="6.4" cy="10.6" rx="1.05" ry="0.7"/>
+    <!-- Music note: flag -->
+    <path d="M7.475 6.5 q1.4 0.3 1.4 1.5 q-0.5 -0.45 -1.4 -0.55 z"/>
+  </g>
+</svg>

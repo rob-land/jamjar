@@ -19,8 +19,7 @@ import gi
 gi.require_version("Gtk", "4.0")
 from gi.repository import Gdk, Gio, GLib, Gtk
 
-from ..models import album_from_json, artist_from_json
-from ._common import commit_favorite
+from ._common import commit_favorite, open_album_by_id, open_artist_by_id
 
 if TYPE_CHECKING:
     from ..application import JamjarApplication
@@ -38,10 +37,7 @@ def install_track_menu(widget: Gtk.Widget,
         track = get_track()
         if track is None:
             return
-        popover = _build_popover(track, app, window, widget)
-        popover.set_pointing_to(Gdk.Rectangle(x=int(x), y=int(y),
-                                              width=1, height=1))
-        popover.popup()
+        show_track_popover(track, app, window, widget, x, y)
 
     rc = Gtk.GestureClick.new()
     rc.set_button(Gdk.BUTTON_SECONDARY)
@@ -51,6 +47,20 @@ def install_track_menu(widget: Gtk.Widget,
     lp = Gtk.GestureLongPress.new()
     lp.connect("pressed", lambda _g, x, y: show(x, y))
     widget.add_controller(lp)
+
+
+def show_track_popover(track: "Track", app: "JamjarApplication",
+                       window: "JamjarWindow", parent: Gtk.Widget,
+                       x: float, y: float) -> None:
+    """Pop up the track context menu at (x, y) relative to `parent`.
+
+    Exposed so callers that don't have a Track on-hand at gesture time
+    (e.g. search rows that carry only a SearchHit) can fetch first, then
+    invoke this directly.
+    """
+    popover = _build_popover(track, app, window, parent)
+    popover.set_pointing_to(Gdk.Rectangle(x=int(x), y=int(y), width=1, height=1))
+    popover.popup()
 
 
 def _build_popover(track, app, window, parent) -> Gtk.PopoverMenu:
@@ -111,49 +121,20 @@ def _build_popover(track, app, window, parent) -> Gtk.PopoverMenu:
 
 
 def _go_to_album(track, app, window) -> None:
-    if not track.album_id or app.client is None:
-        return
-
-    async def fetch():
-        return await app.client.get_item(track.album_id)
-
-    def done(future):
-        try:
-            item = future.result()
-        except Exception as e:
-            log.warning("failed to fetch album %s: %s", track.album_id, e)
-            return
-        GLib.idle_add(lambda: (window.open_album(album_from_json(item)),
-                               False)[1])
-
-    app.runner.submit(fetch()).add_done_callback(done)
+    open_album_by_id(window, app, track.album_id)
 
 
 def _go_to_artist(track, app, window) -> None:
-    if not track.artist_ids or app.client is None:
+    if not track.artist_ids:
         return
-    artist_id = track.artist_ids[0]
-
-    async def fetch():
-        return await app.client.get_item(artist_id)
-
-    def done(future):
-        try:
-            item = future.result()
-        except Exception as e:
-            log.warning("failed to fetch artist %s: %s", artist_id, e)
-            return
-        GLib.idle_add(lambda: (window.open_artist(artist_from_json(item)),
-                               False)[1])
-
-    app.runner.submit(fetch()).add_done_callback(done)
+    open_artist_by_id(window, app, track.artist_ids[0])
 
 
 def _toggle_favorite(track, app) -> None:
     if app.client is None:
         return
     new_state = not bool(track.user_data.get("IsFavorite"))
-    commit_favorite(app.client, track, new_state, app.runner)
+    commit_favorite(app.client, track, new_state, app.runner, app=app)
 
 
 def _play_now(track, app) -> None:

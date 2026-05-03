@@ -16,8 +16,7 @@ import gi
 gi.require_version("Gtk", "4.0")
 from gi.repository import Gdk, Gio, GLib, Gtk
 
-from ..models import artist_from_json
-from ._common import commit_favorite
+from ._common import commit_favorite, open_artist_by_id
 
 if TYPE_CHECKING:
     from ..application import JamjarApplication
@@ -116,27 +115,13 @@ def _play_now(tracks: list, app) -> None:
 
 
 def _go_to_artist(album, app, window) -> None:
-    if not album.artist_ids or app.client is None:
+    if not album.artist_ids:
         return
-    artist_id = album.artist_ids[0]
-
-    async def fetch():
-        return await app.client.get_item(artist_id)
-
-    def done(future):
-        try:
-            item = future.result()
-        except Exception as e:
-            log.warning("failed to fetch artist %s: %s", artist_id, e)
-            return
-        GLib.idle_add(lambda: (window.open_artist(artist_from_json(item)),
-                               False)[1])
-
-    app.runner.submit(fetch()).add_done_callback(done)
+    open_artist_by_id(window, app, album.artist_ids[0])
 
 
 def _toggle_favorite(album, app) -> None:
     if app.client is None:
         return
     new_state = not bool(album.user_data.get("IsFavorite"))
-    commit_favorite(app.client, album, new_state, app.runner)
+    commit_favorite(app.client, album, new_state, app.runner, app=app)

@@ -8,10 +8,11 @@ from typing import TYPE_CHECKING
 import gi
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Adw, GLib, Gtk
+from gi.repository import Adw, Gdk, GLib, Gtk
 
 from ..models import album_from_json, artist_from_json, track_from_json
 from ._common import escape_markup
+from .track_menu import show_track_popover
 
 if TYPE_CHECKING:
     from ..application import JamjarApplication
@@ -102,6 +103,7 @@ class SearchPage(Adw.NavigationPage):
             row.add_prefix(Gtk.Image.new_from_icon_name(_icon_for_type(hit.type)))
             row.connect("activated", self._on_row_activated, hit)
             if hit.type == "Audio":
+                self._install_audio_row_menu(row, hit)
                 self.tracks_group.add(row)
                 self._rows_by_group[self.tracks_group].append(row)
                 any_tracks = True
@@ -117,6 +119,46 @@ class SearchPage(Adw.NavigationPage):
         self.tracks_group.set_visible(any_tracks)
         self.albums_group.set_visible(any_albums)
         self.artists_group.set_visible(any_artists)
+
+    def _install_audio_row_menu(self, row: Adw.ActionRow, hit) -> None:
+        """Right-click / long-press on an Audio search row pops the standard
+        track menu. The Track isn't in hand at gesture time (search returns
+        SearchHit, which only carries an item id), so we fetch it on first
+        request and cache it on the row for repeat right-clicks.
+        """
+        def show_at(x: float, y: float) -> None:
+            cached = getattr(row, "_jamjar_track", None)
+            if cached is not None:
+                show_track_popover(cached, self.app, self.window, row, x, y)
+                return
+            if self.app.client is None:
+                return
+
+            async def fetch():
+                return await self.app.client.get_item(hit.item_id)
+
+            def done(future):
+                try:
+                    item = future.result()
+                except Exception as e:
+                    log.warning("track fetch for menu failed: %s", e)
+                    return
+                track = track_from_json(item)
+                row._jamjar_track = track
+                GLib.idle_add(lambda: (show_track_popover(track, self.app,
+                                                          self.window, row,
+                                                          x, y), False)[1])
+
+            self.app.runner.submit(fetch()).add_done_callback(done)
+
+        rc = Gtk.GestureClick.new()
+        rc.set_button(Gdk.BUTTON_SECONDARY)
+        rc.connect("pressed", lambda _g, _n, x, y: show_at(x, y))
+        row.add_controller(rc)
+
+        lp = Gtk.GestureLongPress.new()
+        lp.connect("pressed", lambda _g, x, y: show_at(x, y))
+        row.add_controller(lp)
 
     def _on_row_activated(self, _row, hit) -> None:
         if self.app.client is None:

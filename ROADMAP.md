@@ -4,7 +4,7 @@ A snapshot of where the app sits relative to peer music players, what gaps are
 worth closing, and the order to close them in. The concrete work items below
 flow into [`TODO.md`](./TODO.md); this document is the *why*.
 
-Date of evaluation: 2026-04-28.
+Date of evaluation: 2026-04-28. Tier 1 fully drained as of 2026-05-03; Tier 2 next. See [`TODO.md`](./TODO.md) for the live backlog.
 
 ---
 
@@ -33,27 +33,30 @@ gap-to-close benchmark for feature work.
 
 ## Gaps, ranked by impact/effort
 
-### Tier 1 — small effort, big UX win
+### Tier 1 — done
 
-These are each roughly one focused session and together transform the app from
-"library viewer" to "real music client."
+All six items shipped, plus the obvious follow-ups (cross-surface favorite
+sync, search-row context menu, per-row heart indicators, click-to-seek on
+synced lyric lines, jump-to-letter index on library tabs).
 
-1. **Track context menus** — right-click any track row: Play next, Add to
-   queue, Go to album, Go to artist, Toggle favorite, Add to playlist.
-   Symfonium and every desktop player has this; the absence makes Jamjar feel
-   passive.
-2. **Favorite / heart button** on the bar and Now Playing surfaces.
-   Endpoint already exists (`POST/DELETE /Users/{u}/FavoriteItems/{id}`),
-   just no UI.
-3. **Lyrics view** on Now Playing. Endpoint exists (`/Audio/{id}/Lyrics`),
-   DESIGN.md mentions it, the phone Now Playing already has a Carousel slot
-   for it.
-4. **Volume slider** in the bar (desktop). Phones use hardware keys; desktops
-   expect a slider.
-5. **Sleep timer** in the primary menu.
-6. **Search icon in sidebar header** — move search from a menu item to a
-   magnifying-glass button in the sidebar's upper-left, matching GNOME's
-   standard pattern (Files, Photos, etc.).
+1. ✅ **Track context menus** — Play Now, Play Next, Add to Queue, Go to Album,
+   Go to Artist, Toggle Favorite. Plus an album context menu with the same
+   shape on every album tile, and lazy-fetch context menus on search rows.
+2. ✅ **Favorite / heart button** on the bar, Now Playing page, and album/
+   artist headers — all kept in sync via a `favorite-changed` signal on
+   `JamjarApplication`. Per-row heart suffixes on queue / album-tracks /
+   playlist-tracks rows update live.
+3. ✅ **Lyrics view** on Now Playing with synced highlighting, centered
+   auto-scroll, click-a-line-to-seek, and smooth opacity transitions.
+4. ✅ **Volume slider** — vertical popover slider on the bar (desktop only),
+   bound to player volume, persisted to GSettings, with the speaker icon
+   updating per level.
+5. ✅ **Sleep timer** — primary-menu entry with 15/30/45/60-min presets and a
+   custom 1–480 min spinbutton; linear fade to 0 over 10 s on expiry, then
+   pause + restore volume.
+6. ✅ **Search button on page headers** — removed from sidebar destinations;
+   each top-level page header has a magnifying-glass `Button` bound to
+   `app.search`, positioned per GNOME convention.
 
 ### Tier 2 — moderate effort, common expectations
 
@@ -92,8 +95,14 @@ These are each roughly one focused session and together transform the app from
 
 ## Recommended order
 
-Do Tier 1 in order before chasing the larger items in TODO (radio channels,
-persistent image cache). Each Tier 1 item closes a gap users would notice
-within minutes of opening the app. Tier 3 should come after the Tier 2
-foundations they depend on (e.g. context-menu plumbing makes "Start radio from
-this album" trivial).
+Tier 1 is drained. Tier 2 next, ideally in roughly this order: drag-to-
+reorder queue (#7), playlist editing (#8 — also unblocks the deferred
+"Add to Playlist" item from #1), sort/filter on Library pages (#9), then
+the polish items #10–#11. Tier 3 should come after the Tier 2 foundations
+they depend on (context-menu plumbing already makes "Start radio from this
+album" trivial — that's a Tier-2-adjacent quick win).
+
+Two perf/HIG items worth picking up alongside Tier 2 work:
+- **JSON response cache + manual refresh** (TODO #16) — pairs naturally with
+  any new feature that needs a "Refresh" affordance.
+- **Empty space under Recently Added tiles** (TODO #13) — layout glitch.

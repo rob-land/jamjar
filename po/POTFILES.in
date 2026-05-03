@@ -13,6 +13,7 @@ data/ui/now-playing-bar.blp
 data/ui/now-playing-page.blp
 data/ui/queue-pane.blp
 data/ui/prefs.blp
+data/ui/help-overlay.blp
 jamjar/main.py
 jamjar/application.py
 jamjar/window.py

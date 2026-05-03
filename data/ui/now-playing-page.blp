@@ -18,6 +18,14 @@ template $JamjarNowPlayingPage: Adw.NavigationPage {
       }
 
       [end]
+      Button now_playing_search {
+        icon-name: "system-search-symbolic";
+        action-name: "app.search";
+        tooltip-text: _("Search");
+        styles ["flat", "circular"]
+      }
+
+      [end]
       ToggleButton favorite_button {
         icon-name: "heart-outline-symbolic";
         tooltip-text: _("Favorite");
@@ -151,12 +159,14 @@ template $JamjarNowPlayingPage: Adw.NavigationPage {
             Button {
               icon-name: "media-skip-backward-symbolic";
               action-name: "app.previous";
+              tooltip-text: _("Previous");
               styles ["circular", "flat"]
             }
 
             Button np_play {
               icon-name: "media-playback-start-symbolic";
               action-name: "app.toggle";
+              tooltip-text: _("Play / Pause");
               width-request: 56;
               height-request: 56;
               styles ["circular", "suggested-action", "pill"]
@@ -165,6 +175,7 @@ template $JamjarNowPlayingPage: Adw.NavigationPage {
             Button {
               icon-name: "media-skip-forward-symbolic";
               action-name: "app.next";
+              tooltip-text: _("Next");
               styles ["circular", "flat"]
             }
 

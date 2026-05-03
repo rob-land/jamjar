@@ -53,6 +53,14 @@ class WindowedListModel(GObject.Object, Gio.ListModel):
     """
 
     __gtype_name__ = "JamjarWindowedListModel"
+    __gsignals__ = {
+        # Fired whenever loading starts or finishes (success / empty /
+        # error). Views observe this alongside `items-changed` so they can
+        # tell "nothing yet because still loading" apart from "nothing
+        # because the query genuinely returned empty" — the latter is
+        # what should trigger an empty-state UI.
+        "load-state-changed": (GObject.SignalFlags.RUN_FIRST, None, ()),
+    }
 
     # First fetch is small so the user sees content quickly; subsequent
     # pages are bigger to amortise per-request overhead while scrolling.
@@ -61,10 +69,12 @@ class WindowedListModel(GObject.Object, Gio.ListModel):
     LOOKAHEAD = 40
 
     def __init__(self, runner: AsyncRunner,
-                 fetcher: Callable[..., Awaitable[list]]) -> None:
+                 fetcher: Callable[..., Awaitable[list]],
+                 on_error: Optional[Callable[[str], None]] = None) -> None:
         super().__init__()
         self._runner = runner
         self._fetcher = fetcher
+        self._on_error = on_error
         self._items: list[_Wrapper] = []
         self._loading = False
         self._reached_end = False
@@ -102,10 +112,17 @@ class WindowedListModel(GObject.Object, Gio.ListModel):
         if position + self.LOOKAHEAD >= len(self._items):
             self.request_more()
 
+    @property
+    def is_empty_after_load(self) -> bool:
+        """True when the model has finished loading and produced 0 items —
+        i.e., the right state to show an empty-state UI."""
+        return self._reached_end and not self._items and not self._loading
+
     def request_more(self) -> None:
         if self._loading or self._reached_end:
             return
         self._loading = True
+        self.emit("load-state-changed")
         gen = self._gen
         start = len(self._items)
         limit = self.FIRST_PAGE_SIZE if start == 0 else self.PAGE_SIZE
@@ -132,15 +149,20 @@ class WindowedListModel(GObject.Object, Gio.ListModel):
                     return False
                 self._loading = False
                 if error:
+                    if self._on_error is not None:
+                        self._on_error("Couldn't load this section.")
+                    self.emit("load-state-changed")
                     return False
                 if not items:
                     self._reached_end = True
+                    self.emit("load-state-changed")
                     return False
                 if len(items) < limit:
                     self._reached_end = True
                 base = len(self._items)
                 self._items.extend(_Wrapper(it) for it in items)
                 self.items_changed(base, 0, len(items))
+                self.emit("load-state-changed")
                 return False
 
             GLib.idle_add(apply)
@@ -155,6 +177,7 @@ class WindowedListModel(GObject.Object, Gio.ListModel):
         self._gen += 1
         if old_n:
             self.items_changed(0, old_n, 0)
+        self.emit("load-state-changed")
 
     def set_filter(self, **kwargs) -> None:
         """Replace the fetcher's filter kwargs and reload from the start.
@@ -180,14 +203,16 @@ class Library(GObject.Object):
 
     __gtype_name__ = "JamjarLibrary"
 
-    def __init__(self, client: JellyfinClient, runner: AsyncRunner) -> None:
+    def __init__(self, client: JellyfinClient, runner: AsyncRunner,
+                 on_error: Optional[Callable[[str], None]] = None) -> None:
         super().__init__()
         self.client = client
         self.runner = runner
+        self._on_error = on_error
 
-        self.albums    = WindowedListModel(runner, client.list_albums)
-        self.artists   = WindowedListModel(runner, client.list_artists)
-        self.songs     = WindowedListModel(runner, client.list_songs)
+        self.albums  = WindowedListModel(runner, client.list_albums,  on_error=on_error)
+        self.artists = WindowedListModel(runner, client.list_artists, on_error=on_error)
+        self.songs   = WindowedListModel(runner, client.list_songs,   on_error=on_error)
         self.playlists = Gio.ListStore.new(_Wrapper)
         self.recently_added = Gio.ListStore.new(_Wrapper)
         self.recently_played = Gio.ListStore.new(_Wrapper)
@@ -225,6 +250,8 @@ class Library(GObject.Object):
                 items = future.result()
             except Exception as e:
                 log.warning("playlists fetch failed: %s", e)
+                if self._on_error is not None:
+                    self._on_error("Couldn't load playlists.")
                 return
             self._replace(self.playlists, items)
         self.runner.submit(runme()).add_done_callback(done)
@@ -237,6 +264,8 @@ class Library(GObject.Object):
                 items = future.result()
             except Exception as e:
                 log.warning("recently-added fetch failed: %s", e)
+                if self._on_error is not None:
+                    self._on_error("Couldn't load Recently Added.")
                 return
             self._replace(self.recently_added, items)
         self.runner.submit(runme()).add_done_callback(done)
@@ -249,6 +278,8 @@ class Library(GObject.Object):
                 items = future.result()
             except Exception as e:
                 log.warning("recently-played fetch failed: %s", e)
+                if self._on_error is not None:
+                    self._on_error("Couldn't load Recently Played.")
                 return
             self._replace(self.recently_played, items)
         self.runner.submit(runme()).add_done_callback(done)
@@ -261,6 +292,8 @@ class Library(GObject.Object):
                 items = future.result()
             except Exception as e:
                 log.warning("suggestions fetch failed: %s", e)
+                if self._on_error is not None:
+                    self._on_error("Couldn't load Suggestions.")
                 return
             self._replace(self.suggested, items)
         self.runner.submit(runme()).add_done_callback(done)

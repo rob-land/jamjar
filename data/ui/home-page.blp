@@ -13,6 +13,13 @@ template $JamjarHomePage: Adw.NavigationPage {
         icon-name: "sidebar-show-symbolic";
         tooltip-text: _("Toggle Sidebar");
       }
+
+      [end]
+      Button home_search {
+        icon-name: "system-search-symbolic";
+        action-name: "app.search";
+        tooltip-text: _("Search");
+      }
     }
 
     content: ScrolledWindow {

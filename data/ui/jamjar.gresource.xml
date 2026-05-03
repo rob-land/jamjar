@@ -14,6 +14,7 @@
     <file compressed="true" preprocess="xml-stripblanks">now-playing-page.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">queue-pane.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">prefs.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">help-overlay.ui</file>
     <file alias="style.css">style.css</file>
   </gresource>
 </gresources>
