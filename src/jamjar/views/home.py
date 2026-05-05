@@ -5,9 +5,6 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
-import gi
-gi.require_version("Gtk", "4.0")
-gi.require_version("Adw", "1")
 from gi.repository import Adw, GLib, Gtk
 
 from ._common import fallback_icon, format_duration, load_remote_image_async

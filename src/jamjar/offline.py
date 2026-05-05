@@ -12,7 +12,6 @@ from typing import Iterable
 
 import aiohttp
 
-import gi
 from gi.repository import GLib
 
 from .client import AsyncRunner, JellyfinClient

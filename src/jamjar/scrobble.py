@@ -5,7 +5,6 @@ from __future__ import annotations
 import logging
 from typing import Optional
 
-import gi
 from gi.repository import GLib, GObject
 
 from .client import AsyncRunner, JellyfinClient

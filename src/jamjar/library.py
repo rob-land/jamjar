@@ -5,8 +5,6 @@ from __future__ import annotations
 import logging
 from typing import Awaitable, Callable, Optional
 
-import gi
-gi.require_version("Gtk", "4.0")
 from gi.repository import GLib, GObject, Gio
 
 from .client import AsyncRunner, JellyfinClient

@@ -4,9 +4,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import gi
-gi.require_version("Gtk", "4.0")
-gi.require_version("Adw", "1")
 from gi.repository import Adw, Gtk
 
 from ._common import (apply_favorite_visual, commit_favorite, escape_markup,

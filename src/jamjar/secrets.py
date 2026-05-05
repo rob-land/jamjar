@@ -5,8 +5,6 @@ from __future__ import annotations
 import logging
 from typing import Optional
 
-import gi
-gi.require_version("Secret", "1")
 from gi.repository import GLib, Secret
 
 log = logging.getLogger(__name__)

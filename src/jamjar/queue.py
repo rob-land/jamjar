@@ -7,7 +7,6 @@ import random
 from enum import IntEnum
 from typing import Optional
 
-import gi
 from gi.repository import GObject
 
 from .client import JellyfinClient

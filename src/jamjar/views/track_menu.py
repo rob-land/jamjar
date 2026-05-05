@@ -15,8 +15,6 @@ from __future__ import annotations
 import logging
 from typing import Callable, Optional, TYPE_CHECKING
 
-import gi
-gi.require_version("Gtk", "4.0")
 from gi.repository import Gdk, Gio, GLib, Gtk
 
 from ._common import commit_favorite, open_album_by_id, open_artist_by_id

@@ -8,9 +8,6 @@ import uuid
 from gettext import gettext as _
 from typing import Optional
 
-import gi
-gi.require_version("Gtk", "4.0")
-gi.require_version("Adw", "1")
 from gi.repository import Adw, Gio, GLib, GObject, Gtk
 
 from . import __version__, imagecache

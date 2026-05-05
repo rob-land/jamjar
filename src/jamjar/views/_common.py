@@ -5,9 +5,6 @@ from __future__ import annotations
 import logging
 from typing import Callable, Optional
 
-import gi
-gi.require_version("Gtk", "4.0")
-gi.require_version("Adw", "1")
 from gi.repository import Adw, Gdk, GdkPixbuf, GLib, Gio, Gtk
 
 from .. import imagecache

@@ -5,8 +5,6 @@ from __future__ import annotations
 import logging
 from typing import Optional
 
-import gi
-gi.require_version("Gst", "1.0")
 from gi.repository import GLib, GObject, Gst
 
 from .models import Track
