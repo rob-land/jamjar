@@ -31,8 +31,13 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-# ── Optional: regenerate the deps manifest from requirements.txt ──────────
-if $REGEN; then
+DEPS=build-aux/flatpak/python3-deps.json
+
+# ── Regenerate deps if requested or missing ───────────────────────────────
+if $REGEN || [[ ! -f "$DEPS" ]]; then
+    if ! $REGEN; then
+        echo "Note: $DEPS not found — auto-regenerating from requirements.txt." >&2
+    fi
     if [[ -x ~/.local/bin/flatpak_pip_generator ]]; then
         GEN=~/.local/bin/flatpak_pip_generator
     elif command -v flatpak-pip-generator >/dev/null 2>&1; then
@@ -51,8 +56,8 @@ if $REGEN; then
     gen_status=$?
     set -e
 
-    if [[ ! -f build-aux/flatpak/python3-deps.json ]]; then
-        echo "Error: flatpak_pip_generator did not produce python3-deps.json (exit $gen_status)" >&2
+    if [[ ! -f "$DEPS" ]]; then
+        echo "Error: flatpak_pip_generator did not produce $DEPS (exit $gen_status)" >&2
         exit 1
     fi
     if (( gen_status != 0 )); then
@@ -61,7 +66,7 @@ if $REGEN; then
 fi
 
 # ── Patch deps to use pre-built wheels (idempotent) ───────────────────────
-python3 fix-flatpak-deps.py build-aux/flatpak/python3-deps.json
+python3 fix-flatpak-deps.py "$DEPS"
 
 # ── qemu-binfmt sanity check for cross-arch builds ────────────────────────
 HOST_ARCH=$(uname -m)
