@@ -17,6 +17,21 @@ This file is the orientation document for Claude Code working on this repo. The 
 
 ---
 
+## Before making changes
+
+Read [`STYLE_GUIDE.md`](STYLE_GUIDE.md) first when touching any of:
+
+- Meson build files, the Flatpak manifest, or `requirements.txt`
+- Anything under `data/ui/` or `data/icons/`
+- New top-level Python files, or new modules under `src/<pkg>/`
+- Imports — especially `import gi` / `gi.require_version`
+- New launcher / `.in` substitution targets
+
+The five-project unification (banter, clicker, finlit, jamjar, tonic)
+established conventions that drift easily from intuition. The recurring
+slip is reintroducing per-file `gi.require_version` blocks in new
+modules; the launcher (`<project>.in`) is the single declaration site.
+
 ## Stack
 
 | Layer | Choice |
