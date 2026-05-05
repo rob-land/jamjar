@@ -41,9 +41,23 @@ if $REGEN; then
         echo "Error: flatpak_pip_generator not found on PATH or in ~/.local/bin" >&2
         exit 1
     fi
+    # flatpak_pip_generator throws an ImportError during cleanup after a
+    # successful save (known upstream quirk on Python 3.13+). Swallow a
+    # non-zero exit if the JSON file was actually produced.
+    set +e
     "$GEN" --runtime='org.gnome.Sdk//50' \
            --requirements-file=requirements.txt \
            --output build-aux/flatpak/python3-deps
+    gen_status=$?
+    set -e
+
+    if [[ ! -f build-aux/flatpak/python3-deps.json ]]; then
+        echo "Error: flatpak_pip_generator did not produce python3-deps.json (exit $gen_status)" >&2
+        exit 1
+    fi
+    if (( gen_status != 0 )); then
+        echo "Note: flatpak_pip_generator exited $gen_status after saving the file; continuing." >&2
+    fi
 fi
 
 # ── Patch deps to use pre-built wheels (idempotent) ───────────────────────
