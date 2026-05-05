@@ -47,7 +47,7 @@ jamjar/
 │       ├── queue-pane.blp
 │       └── prefs.blp
 ├── po/
-└── jamjar/
+└── src/jamjar/
     ├── __init__.py
     ├── main.py                      # Application entry
     ├── application.py               # Adw.Application subclass
@@ -551,7 +551,7 @@ aarch64 cross-build via QEMU is identical to the Clicker workflow: `flatpak-buil
 ## 12. Application Skeleton
 
 ```python
-# jamjar/main.py
+# src/jamjar/main.py
 import sys
 from .application import JamjarApplication
 
@@ -561,7 +561,7 @@ def main():
 ```
 
 ```python
-# jamjar/application.py
+# src/jamjar/application.py
 import gi
 gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')

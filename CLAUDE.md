@@ -46,7 +46,7 @@ jamjar/
 ├── ROADMAP.md                       # tier ranking and rationale
 ├── TODO.md                          # current backlog
 ├── README.md
-├── flatpak/
+├── build-aux/flatpak/
 │   └── land.rob.Jamjar.json
 ├── data/
 │   ├── land.rob.Jamjar.desktop.in
@@ -73,7 +73,7 @@ jamjar/
 │       ├── prefs.blp
 │       └── help-overlay.blp         # Gtk.ShortcutsWindow
 ├── po/
-└── jamjar/
+└── src/jamjar/
     ├── __init__.py
     ├── main.py                      # Application entry
     ├── application.py               # Adw.Application subclass + signals

@@ -225,7 +225,7 @@ jamjar/
 ├── data/
 │   ├── ui/*.blp             # Blueprint sources, compiled to .ui at build
 │   └── *.desktop.in / *.metainfo.xml.in / *.gschema.xml
-├── jamjar/                  # Python package
+├── src/jamjar/              # Python package
 │   ├── application.py       # Adw.Application; owns runner/client/player/queue
 │   ├── window.py            # Main window template + nav
 │   ├── client.py            # AsyncRunner (asyncio bg thread) + JellyfinClient

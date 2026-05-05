@@ -37,7 +37,7 @@ py_conf.set_quoted('APP_ID',          app_id)
 py_conf.set_quoted('GETTEXT_PACKAGE', gettext_package)
 
 subdir('data')
-subdir('jamjar')
+subdir('src/jamjar')
 subdir('po')
 
 gnome.post_install(

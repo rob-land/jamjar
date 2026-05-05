@@ -73,7 +73,7 @@ widgets. Persists to GSettings `volume` (already restored at attach via
 popover opens so future MPRIS/external volume changes show up.
 
 ### 5. Sleep timer — done
-`SleepTimer` (`jamjar/sleep_timer.py`) owns countdown + fade-out; presents
+`SleepTimer` (`src/jamjar/sleep_timer.py`) owns countdown + fade-out; presents
 via `SleepTimerDialog` (`views/sleep_timer.py`) launched from
 `app.sleep-timer` (primary-menu "Sleep Timer…"). Dialog offers
 15/30/45/60-min presets and a custom SpinButton (1..480 min); persists last
@@ -188,6 +188,6 @@ so the warm path is instant, then revalidate in the background. Use a sane
 TTL or ETag/Last-Modified if Jellyfin supplies them. Pair this with a
 manual refresh action (pull-to-refresh on phone, header refresh button on
 desktop) so newly-added or removed items can be picked up without waiting
-for TTL expiry. The image cache (`jamjar/imagecache.py`, done) is keyed by
+for TTL expiry. The image cache (`src/jamjar/imagecache.py`, done) is keyed by
 `imageTag` and self-invalidates; the JSON cache will need explicit
 invalidation, which is why this is its own item.
