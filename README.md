@@ -186,6 +186,20 @@ Notes:
 
 ### Build & install
 
+The repo ships a `build-all.sh` driver that wraps `flatpak-builder`
+with sensible defaults; it patches `python3-deps.json` (via
+`fix-flatpak-deps.py`) so source tarballs become pre-built wheels and
+the build sandbox doesn't need a Rust toolchain.
+
+```sh
+./build-all.sh                  # both arches
+./build-all.sh --arch x86_64    # single arch
+./build-all.sh --regen-deps     # regenerate python3-deps.json from requirements.txt first
+./build-all.sh --install        # also installs the host-arch bundle (--user)
+```
+
+Or directly:
+
 ```sh
 flatpak-builder --user --install --force-clean \
     build-flatpak build-aux/flatpak/land.rob.Jamjar.json
@@ -194,12 +208,8 @@ flatpak run land.rob.Jamjar
 
 ### aarch64 cross-build (FLX1s / Phosh)
 
-Inside a `binfmt_misc`-enabled QEMU userspace:
-
-```sh
-flatpak-builder --arch=aarch64 --install-deps-from=flathub \
-    --force-clean build-flatpak-arm build-aux/flatpak/land.rob.Jamjar.json
-```
+`./build-all.sh --arch aarch64` (inside a `binfmt_misc`-enabled QEMU
+userspace) does the cross-build automatically.
 
 ---
 
