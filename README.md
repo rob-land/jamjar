@@ -148,7 +148,7 @@ flatpak install --user flathub org.gnome.Platform//50 org.gnome.Sdk//50
 
 ### Generate the Python deps module
 
-`flatpak/python3-modules.json` in this tree was generated via the upstream
+`build-aux/flatpak/python3-deps.json` in this tree was generated via the upstream
 `flatpak-pip-generator.py` from
 [`flatpak-builder-tools`](https://github.com/flatpak/flatpak-builder-tools).
 Regenerate it whenever the dep set changes. The generator must run **inside
@@ -168,10 +168,10 @@ flatpak run --command=sh \
         python3 -m venv .venv
         .venv/bin/pip install --quiet "requirements-parser>=0.11.0,<1.0.0" "packaging>=23.0"
         .venv/bin/python3 flatpak-pip-generator.py \
-            --output python3-modules \
+            --output python3-deps \
             poetry-core aiohttp zeroconf dbus-next
     '
-cp /tmp/jamjar-gen/python3-modules.json flatpak/python3-modules.json
+cp /tmp/jamjar-gen/python3-deps.json build-aux/flatpak/python3-deps.json
 ```
 
 Notes:
@@ -188,7 +188,7 @@ Notes:
 
 ```sh
 flatpak-builder --user --install --force-clean \
-    build-flatpak flatpak/land.rob.Jamjar.yml
+    build-flatpak build-aux/flatpak/land.rob.Jamjar.yml
 flatpak run land.rob.Jamjar
 ```
 
@@ -198,7 +198,7 @@ Inside a `binfmt_misc`-enabled QEMU userspace:
 
 ```sh
 flatpak-builder --arch=aarch64 --install-deps-from=flathub \
-    --force-clean build-flatpak-arm flatpak/land.rob.Jamjar.yml
+    --force-clean build-flatpak-arm build-aux/flatpak/land.rob.Jamjar.yml
 ```
 
 ---
@@ -221,7 +221,7 @@ flatpak-builder --arch=aarch64 --install-deps-from=flathub \
 ```
 jamjar/
 ├── meson.build              # root meson, splits string conf vs. python conf
-├── flatpak/                 # manifest + python deps json placeholder
+├── build-aux/flatpak/       # manifest + python deps json placeholder
 ├── data/
 │   ├── ui/*.blp             # Blueprint sources, compiled to .ui at build
 │   └── *.desktop.in / *.metainfo.xml.in / *.gschema.xml
