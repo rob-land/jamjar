@@ -30,7 +30,7 @@ App ID suggestion: `land.rob.Jamjar` (placeholder — name as you like; "Jamjar"
 jamjar/
 ├── meson.build
 ├── build-aux/flatpak/
-│   └── land.rob.Jamjar.yml
+│   └── land.rob.Jamjar.json
 ├── data/
 │   ├── land.rob.Jamjar.desktop.in
 │   ├── land.rob.Jamjar.metainfo.xml.in
@@ -504,7 +504,7 @@ gnome.post_install(
 ### 11.2 Flatpak manifest
 
 ```yaml
-# build-aux/flatpak/land.rob.Jamjar.yml
+# build-aux/flatpak/land.rob.Jamjar.json
 app-id: land.rob.Jamjar
 runtime: org.gnome.Platform
 runtime-version: '47'

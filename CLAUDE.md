@@ -47,7 +47,7 @@ jamjar/
 ├── TODO.md                          # current backlog
 ├── README.md
 ├── flatpak/
-│   └── land.rob.Jamjar.yml
+│   └── land.rob.Jamjar.json
 ├── data/
 │   ├── land.rob.Jamjar.desktop.in
 │   ├── land.rob.Jamjar.metainfo.xml.in

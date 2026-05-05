@@ -188,7 +188,7 @@ Notes:
 
 ```sh
 flatpak-builder --user --install --force-clean \
-    build-flatpak build-aux/flatpak/land.rob.Jamjar.yml
+    build-flatpak build-aux/flatpak/land.rob.Jamjar.json
 flatpak run land.rob.Jamjar
 ```
 
@@ -198,7 +198,7 @@ Inside a `binfmt_misc`-enabled QEMU userspace:
 
 ```sh
 flatpak-builder --arch=aarch64 --install-deps-from=flathub \
-    --force-clean build-flatpak-arm build-aux/flatpak/land.rob.Jamjar.yml
+    --force-clean build-flatpak-arm build-aux/flatpak/land.rob.Jamjar.json
 ```
 
 ---
