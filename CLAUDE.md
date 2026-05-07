@@ -4,7 +4,7 @@ A full-featured Jellyfin music client for **GNOME desktop** and **Phosh** (Linux
 
 App ID: `land.rob.Jamjar`
 
-This file is the orientation document for Claude Code working on this repo. The full architecture is in [`jamjar-design.md`](./jamjar-design.md) — read that first for any non-trivial change. The current backlog and prioritisation rationale live in [`TODO.md`](./TODO.md).
+This file is the orientation document for Claude Code working on this repo. The full architecture is in [`DESIGN.md`](./DESIGN.md) — read that first for any non-trivial change. The current backlog and prioritisation rationale live in [`TODO.md`](./TODO.md).
 
 ---
 
@@ -57,7 +57,7 @@ modules; the launcher (`<project>.in`) is the single declaration site.
 jamjar/
 ├── meson.build
 ├── CLAUDE.md                        # this file
-├── jamjar-design.md                 # full architecture doc
+├── DESIGN.md                 # full architecture doc
 ├── TODO.md                          # backlog + prioritisation rationale
 ├── README.md
 ├── build-aux/flatpak/
@@ -320,12 +320,12 @@ Notable: `--talk-name=org.freedesktop.secrets` for libsecret access, and the two
 
 ## Working with Claude Code on this repo
 
-- The design doc (`jamjar-design.md`) is the source of truth for architecture. If a requested change conflicts with it, flag the conflict and ask before diverging.
+- The design doc (`DESIGN.md`) is the source of truth for architecture. If a requested change conflicts with it, flag the conflict and ask before diverging.
 - Prefer **small, focused commits** that touch one concern at a time (e.g., "discovery: add mDNS fallback" not "discovery + auth + window changes").
 - For new modules, follow the layout above. New views go under `jamjar/views/`, with a matching `.blp` under `data/ui/`.
 - When adding a Python dep, also add it to the `flatpak-pip-generator` input list and regenerate the JSON. Don't hand-edit the generated JSON.
 - Run a quick sanity build (`meson setup build && ninja -C build`) before declaring a change complete. For UI changes, also do a Flatpak build at least once before merging.
-- Keep `jamjar-design.md` updated when architectural decisions change. CLAUDE.md should stay short and conventions-focused; longer prose belongs in `jamjar-design.md`.
+- Keep `DESIGN.md` updated when architectural decisions change. CLAUDE.md should stay short and conventions-focused; longer prose belongs in `DESIGN.md`.
 
 ---
 

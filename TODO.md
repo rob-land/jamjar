@@ -83,7 +83,7 @@ on track change.
 
 Follow-ups:
 - Queue pane as a third carousel page (originally proposed in
-  `jamjar-design.md`).
+  `DESIGN.md`).
 
 ### 4. Volume slider in the bar (desktop) — done
 `MenuButton volume_button` between repeat and expand on the now-playing bar.
@@ -132,7 +132,7 @@ press-and-hold drag on the rows so users can reorder upcoming tracks.
 Wire "Add to playlist" (from the new context menu) to a dialog that lists the
 user's playlists and offers "Create new". On the Playlist page, support
 rename, delete, and reorder of tracks (drag, like the queue). Backed by the
-Jellyfin Playlists endpoints. Flagged for v0.2 in `jamjar-design.md`.
+Jellyfin Playlists endpoints. Flagged for v0.2 in `DESIGN.md`.
 
 ### 9. Sort / filter on Library pages
 Albums and Songs need sort options (name, year, recently added, artist) and
@@ -162,7 +162,7 @@ params (`SortBy`, `Genres`, `Years`, instant-mix endpoints) the UI needs to
 expose.
 
 ### 13. Offline downloads
-Per `jamjar-design.md` v0.3. Symfonium's killer feature for phone users.
+Per `DESIGN.md` v0.3. Symfonium's killer feature for phone users.
 
 ### 14. Smart playlists / saved searches
 
@@ -225,7 +225,7 @@ invalidation, which is why this is its own item.
 - **Equalizer.** ReplayGain via `rgvolume` already handles loudness; full EQ
   is rarely tweaked once set.
 - **Cast / UPnP.** Heavy lift, narrow audience — leave at v0.4 per
-  `jamjar-design.md`.
+  `DESIGN.md`.
 - **Social features** (sharing, follow, comments). Not appropriate for a
   self-host client.
 - **Personalised recommendations.** Jellyfin's `/Items/Suggestions` is

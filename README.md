@@ -11,7 +11,7 @@ A native GTK4 / libadwaita Jellyfin music client for **GNOME desktop** and **Pho
 - Audio: GStreamer `playbin3`, gapless, ReplayGain
 - System integration: MPRIS2, GNOME Shell search provider, MPRIS-driven media keys
 
-See [`CLAUDE.md`](./CLAUDE.md) for orientation and [`jamjar-design.md`](./jamjar-design.md)
+See [`CLAUDE.md`](./CLAUDE.md) for orientation and [`DESIGN.md`](./DESIGN.md)
 for the full design.
 
 ---
