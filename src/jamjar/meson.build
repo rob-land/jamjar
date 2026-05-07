@@ -1,6 +1,6 @@
 configure_file(
-  input:         'build_config.py.in',
-  output:        'build_config.py',
+  input:         'const.py.in',
+  output:        'const.py',
   configuration: py_conf,
   install:       true,
   install_dir:   moduledir,

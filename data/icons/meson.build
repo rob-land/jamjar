@@ -1,10 +1,10 @@
 install_data(
-  'hicolor' / 'scalable' / 'apps' / app_id + '.svg',
+  'hicolor' / 'scalable' / 'apps' / application_id + '.svg',
   install_dir: datadir / 'icons' / 'hicolor' / 'scalable' / 'apps',
 )
 
 install_data(
-  'hicolor' / 'symbolic' / 'apps' / app_id + '-symbolic.svg',
+  'hicolor' / 'symbolic' / 'apps' / application_id + '-symbolic.svg',
   install_dir: datadir / 'icons' / 'hicolor' / 'symbolic' / 'apps',
 )
 

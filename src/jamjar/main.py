@@ -26,8 +26,8 @@ def _configure_logging() -> None:
 def _load_resources() -> None:
     """Load the GResource bundle (looked up via PKGDATADIR injected at build time)."""
     try:
-        from . import build_config
-        path = os.path.join(build_config.PKGDATADIR, "jamjar.gresource")
+        from . import const
+        path = os.path.join(const.PKGDATADIR, "jamjar.gresource")
     except ImportError:
         # Running uninstalled; fall back to ./build/data/ui/jamjar.gresource
         guess = os.path.join(os.path.dirname(__file__), "..", "build", "data", "ui", "jamjar.gresource")

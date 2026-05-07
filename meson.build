@@ -1,6 +1,7 @@
 project('jamjar',
   version: '0.1.0',
-  meson_version: '>= 1.2.0',
+  meson_version: '>= 1.0.0',
+  license: 'GPL-3.0-or-later',
   default_options: ['warning_level=2'],
 )
 
@@ -15,7 +16,7 @@ localedir   = prefix / get_option('localedir')
 pkgdatadir  = datadir / meson.project_name()
 moduledir   = python.get_install_dir() / 'jamjar'
 
-app_id          = 'land.rob.Jamjar'
+application_id          = 'land.rob.Jamjar'
 gettext_package = meson.project_name()
 
 # Bare-string substitutions for XML/desktop files (no surrounding quotes).
@@ -24,7 +25,7 @@ conf.set('PYTHON',          python.full_path())
 conf.set('VERSION',         meson.project_version())
 conf.set('PKGDATADIR',      pkgdatadir)
 conf.set('LOCALEDIR',       localedir)
-conf.set('APP_ID',          app_id)
+conf.set('APP_ID',          application_id)
 conf.set('GETTEXT_PACKAGE', gettext_package)
 
 # Quoted-string substitutions for Python sources (paths/IDs need to be string literals).
@@ -33,7 +34,7 @@ py_conf.set('PYTHON',                python.full_path())
 py_conf.set_quoted('VERSION',         meson.project_version())
 py_conf.set_quoted('PKGDATADIR',      pkgdatadir)
 py_conf.set_quoted('LOCALEDIR',       localedir)
-py_conf.set_quoted('APP_ID',          app_id)
+py_conf.set_quoted('APP_ID',          application_id)
 py_conf.set_quoted('GETTEXT_PACKAGE', gettext_package)
 
 subdir('data')
