@@ -14,6 +14,13 @@ A native GTK4 / libadwaita Jellyfin music client for **GNOME desktop** and **Pho
 See [`CLAUDE.md`](./CLAUDE.md) for orientation and [`DESIGN.md`](./DESIGN.md)
 for the full design.
 
+## How it was made
+
+> ⚠️ **Honest disclosure**: Every line of code in this project was written
+> by [Claude.ai](https://claude.ai) (Anthropic's AI assistant). I apologise
+> in advance for the AI slop. Pull requests that fix the inevitable weird
+> decisions are very welcome.
+
 ---
 
 ## Requirements
