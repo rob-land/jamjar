@@ -7,8 +7,7 @@ _flatpak_aarch64/
 repo/
 install-prefix/
 *.flatpak
-.claude/*
-!.claude/settings.json
+.claude/
 *.pyc
 __pycache__/
 .venv/
