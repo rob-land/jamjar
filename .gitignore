@@ -1,8 +1,11 @@
+_build/
+_install/
+_flatpak/
+_flatpak_x86_64/
+_flatpak_aarch64/
 build/
 builddir/
 build-flatpak/
-_flatpak_x86_64/
-_flatpak_aarch64/
 .flatpak-builder/
 repo/
 install-prefix/
