@@ -4,7 +4,7 @@ A full-featured Jellyfin music client for **GNOME desktop** and **Phosh** (Linux
 
 App ID: `land.rob.Jamjar`
 
-This file is the orientation document for Claude Code working on this repo. The full architecture is in [`jamjar-design.md`](./jamjar-design.md) — read that first for any non-trivial change. The current backlog is [`TODO.md`](./TODO.md); the prioritisation rationale is [`ROADMAP.md`](./ROADMAP.md).
+This file is the orientation document for Claude Code working on this repo. The full architecture is in [`jamjar-design.md`](./jamjar-design.md) — read that first for any non-trivial change. The current backlog and prioritisation rationale live in [`TODO.md`](./TODO.md).
 
 ---
 
@@ -58,8 +58,7 @@ jamjar/
 ├── meson.build
 ├── CLAUDE.md                        # this file
 ├── jamjar-design.md                 # full architecture doc
-├── ROADMAP.md                       # tier ranking and rationale
-├── TODO.md                          # current backlog
+├── TODO.md                          # backlog + prioritisation rationale
 ├── README.md
 ├── build-aux/flatpak/
 │   └── land.rob.Jamjar.json

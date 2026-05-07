@@ -1,13 +1,34 @@
 # Jamjar TODO
 
-Ordering follows [`ROADMAP.md`](./ROADMAP.md): Tier 1 (small UX wins) first,
-then Tier 2 (common expectations), then standing items (existing TODOs).
+The live backlog. Tier 1 (small UX wins) is drained; Tier 2 (common
+expectations) is next, then Tier 3 (bigger lifts), then standing items.
 
 **HIG audit follow-ups still open:** none — library-tab empty states and generic error toasts both wired (see `_observe_windowed` / `_refresh_playlists_stack` in `views/library.py` and `Application.show_toast` in `application.py`).
 
 ---
 
-## Tier 1 — small effort, big UX win
+## Where Jamjar sits today
+
+**On par with modern GNOME apps.** Adaptive libadwaita layout, sidebar
+navigation, GTK4 navigation stack, blueprint UI, system MPRIS hookup, dark mode
+honored. The foundation is stronger than Lollypop or Rhythmbox and visually
+reads as a "real" GNOME app already.
+
+**Closest peer is Symfonium (Android Jellyfin client).** Symfonium is the
+most useful comparison: same backend, same audience, more mature. It's the
+gap-to-close benchmark for feature work.
+
+| Player        | What it does well that Jamjar doesn't yet           |
+|---------------|-----------------------------------------------------|
+| Symfonium     | Context menus, smart queue ops, EQ, offline sync   |
+| Amberol       | Tactile feel, smooth transitions, polish           |
+| Spotify/Apple | Curated radio, lyrics view, polished now-playing    |
+| Lollypop      | Party mode, last.fm integration                     |
+| Rhythmbox     | Internet radio, podcast support (out of scope)      |
+
+---
+
+## Tier 1 — small effort, big UX win (done)
 
 ### 1. Track + album context menus — done
 `views/track_menu.py` provides `install_track_menu(...)` (right-click +
@@ -61,7 +82,8 @@ opacity transition smooths the active-line swap; scroll resets to top
 on track change.
 
 Follow-ups:
-- Queue pane as a third carousel page (originally proposed in DESIGN.md).
+- Queue pane as a third carousel page (originally proposed in
+  `jamjar-design.md`).
 
 ### 4. Volume slider in the bar (desktop) — done
 `MenuButton volume_button` between repeat and expand on the now-playing bar.
@@ -110,7 +132,7 @@ press-and-hold drag on the rows so users can reorder upcoming tracks.
 Wire "Add to playlist" (from the new context menu) to a dialog that lists the
 user's playlists and offers "Create new". On the Playlist page, support
 rename, delete, and reorder of tracks (drag, like the queue). Backed by the
-Jellyfin Playlists endpoints.
+Jellyfin Playlists endpoints. Flagged for v0.2 in `jamjar-design.md`.
 
 ### 9. Sort / filter on Library pages
 Albums and Songs need sort options (name, year, recently added, artist) and
@@ -129,22 +151,26 @@ sidebar (or a sub-nav under Home).
 
 ---
 
+## Tier 3 — bigger lift, clear feature parity
+
+### 12. Instant Mix / radio from any item
+Jellyfin's `/Items/{id}/InstantMix` is the engine. Start with "Start radio
+from this album/artist" via context menu (Tier-2-adjacent quick win since the
+context-menu plumbing already exists), then expand to a standalone station
+picker filtered by genre / era / mood. Investigate which `/Items` query
+params (`SortBy`, `Genres`, `Years`, instant-mix endpoints) the UI needs to
+expose.
+
+### 13. Offline downloads
+Per `jamjar-design.md` v0.3. Symfonium's killer feature for phone users.
+
+### 14. Smart playlists / saved searches
+
+---
+
 ## Standing items
 
-### 12. Genre / era / mood radio channels
-Investigate whether Jellyfin supports (or can be made to support) "radio"-
-style endless channels filtered by:
-- Genre
-- Era / decade
-- Mood
-
-Check Jellyfin's `/Items` query options (Genres, Years, instant mix endpoints
-like `/Items/{id}/InstantMix`) and design a UI for selecting and starting
-these stations. Consider seeding this off the Tier 1 context menu first
-("Start radio from this album/artist") before tackling the standalone
-station-picker UI.
-
-### 13. Empty space under Recently Added tiles
+### 15. Empty space under Recently Added tiles
 After cover images load, an empty band appears between the bottom of each
 Recently Added tile and the next section heading. Activation works; only the
 row's vertical sizing is off. Tried scaling the loaded pixbuf to the
@@ -153,7 +179,7 @@ neither fully eliminates the gap. Likely needs the row's height pinned via
 `height-request` on the row Box, or a measure-overlay-style constraint on
 the tile.
 
-### 14. Recently Played and Suggested are empty — done
+### 16. Recently Played and Suggested are empty — done
 `client.recently_played_tracks()` queries `/Items` sorted by `DatePlayed`
 desc with `Filters=IsPlayed` (Jellyfin has no dedicated endpoint;
 `/Users/{u}/Items/Resume` is for paused playback, not history).
@@ -166,7 +192,7 @@ existing track menu (Play Now / Next / Add to Queue / Go to Album / Go
 to Artist / Toggle Favorite). Album/track tile repaints share a
 `_repaint_row(row, store, tile_builder)` helper.
 
-### 15. Clickable artist and album names — done (standalone labels)
+### 17. Clickable artist and album names — done (standalone labels)
 Wired link affordance (`make_link_label`, `open_artist_by_id`,
 `open_album_by_id` in `views/_common.py`; CSS `.link-label:hover {
 text-decoration: underline }`) on the four standalone artist/album
@@ -180,7 +206,7 @@ left non-clickable — they're activate-to-play surfaces and competing
 inner targets would be confusing. Right-click menu on those rows still
 offers "Go to Artist" / "Go to Album" for navigation.
 
-### 16. Persistent response cache for library JSON + manual refresh
+### 18. Persistent response cache for library JSON + manual refresh
 On a large collection, every cold start re-fetches Albums / Artists / Songs /
 Playlists from scratch. Wire up a SQLite cache (e.g.
 `aiohttp-client-cache`) under `GLib.get_user_cache_dir() / "jamjar" / "http"`
@@ -191,3 +217,32 @@ desktop) so newly-added or removed items can be picked up without waiting
 for TTL expiry. The image cache (`src/jamjar/imagecache.py`, done) is keyed by
 `imageTag` and self-invalidates; the JSON cache will need explicit
 invalidation, which is why this is its own item.
+
+---
+
+## Deliberately skipped
+
+- **Equalizer.** ReplayGain via `rgvolume` already handles loudness; full EQ
+  is rarely tweaked once set.
+- **Cast / UPnP.** Heavy lift, narrow audience — leave at v0.4 per
+  `jamjar-design.md`.
+- **Social features** (sharing, follow, comments). Not appropriate for a
+  self-host client.
+- **Personalised recommendations.** Jellyfin's `/Items/Suggestions` is
+  enough; no need for our own ML.
+
+---
+
+## Recommended order
+
+Tier 1 is drained. Tier 2 next, ideally in roughly this order: drag-to-
+reorder queue (#7), playlist editing (#8 — also unblocks the deferred
+"Add to Playlist" item from #1), sort/filter on Library pages (#9), then
+the polish items #10–#11. Tier 3 should come after the Tier 2 foundations
+they depend on (context-menu plumbing already makes "Start radio from this
+album" trivial — that's a Tier-2-adjacent quick win).
+
+Two perf/HIG items worth picking up alongside Tier 2 work:
+- **JSON response cache + manual refresh** (#18) — pairs naturally with
+  any new feature that needs a "Refresh" affordance.
+- **Empty space under Recently Added tiles** (#15) — layout glitch.
