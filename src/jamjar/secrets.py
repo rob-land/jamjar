@@ -10,7 +10,7 @@ from gi.repository import GLib, Secret
 log = logging.getLogger(__name__)
 
 SCHEMA = Secret.Schema.new(
-    "land.rob.Jamjar",
+    "land.rob.jamjar",
     Secret.SchemaFlags.NONE,
     {
         "server_id": Secret.SchemaAttributeType.STRING,

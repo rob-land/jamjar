@@ -32,7 +32,7 @@ SIDEBAR_PAGES: list[tuple[str, str, str]] = [
 # but no longer occupies a sidebar slot.
 
 
-@Gtk.Template(resource_path="/land/rob/Jamjar/window.ui")
+@Gtk.Template(resource_path="/land/rob/jamjar/window.ui")
 class JamjarWindow(Adw.ApplicationWindow):
     __gtype_name__ = "JamjarWindow"
 
@@ -81,7 +81,7 @@ class JamjarWindow(Adw.ApplicationWindow):
         # The "Keyboard Shortcuts" primary-menu entry uses
         # `win.show-help-overlay`, which Gtk.ApplicationWindow auto-registers
         # once a help overlay is set on the window.
-        builder = Gtk.Builder.new_from_resource("/land/rob/Jamjar/help-overlay.ui")
+        builder = Gtk.Builder.new_from_resource("/land/rob/jamjar/help-overlay.ui")
         overlay = builder.get_object("help_overlay")
         if overlay is not None:
             self.set_help_overlay(overlay)

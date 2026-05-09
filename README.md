@@ -3,7 +3,7 @@
 A native GTK4 / libadwaita Jellyfin music client for **GNOME desktop** and **Phosh**
 (Linux phones — particularly the FuriLabs FLX1s).
 
-- App ID: `land.rob.Jamjar`
+- App ID: `land.rob.jamjar`
 - Backend: Jellyfin (self-hosted)
 - Adaptive: works in portrait phone and docked desktop layouts
 - Auth: Quick Connect or username/password, tokens stored in libsecret
@@ -209,8 +209,8 @@ Or directly:
 
 ```sh
 flatpak-builder --user --install --force-clean \
-    build-flatpak build-aux/flatpak/land.rob.Jamjar.json
-flatpak run land.rob.Jamjar
+    build-flatpak build-aux/flatpak/land.rob.jamjar.json
+flatpak run land.rob.jamjar
 ```
 
 ### aarch64 cross-build (FLX1s / Phosh)

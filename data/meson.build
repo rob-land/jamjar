@@ -4,8 +4,8 @@ subdir('icons')
 # Desktop file
 desktop_file = i18n.merge_file(
   input:  configure_file(
-    input:         'land.rob.Jamjar.desktop.in',
-    output:        'land.rob.Jamjar.desktop.in',
+    input:         'land.rob.jamjar.desktop.in',
+    output:        'land.rob.jamjar.desktop.in',
     configuration: conf,
   ),
   output:     application_id + '.desktop',
@@ -26,8 +26,8 @@ endif
 # AppStream metainfo
 appstream_file = i18n.merge_file(
   input:  configure_file(
-    input:         'land.rob.Jamjar.metainfo.xml.in',
-    output:        'land.rob.Jamjar.metainfo.xml.in',
+    input:         'land.rob.jamjar.metainfo.xml.in',
+    output:        'land.rob.jamjar.metainfo.xml.in',
     configuration: conf,
   ),
   output:     application_id + '.metainfo.xml',
@@ -47,7 +47,7 @@ endif
 
 # GSettings schema
 install_data(
-  'land.rob.Jamjar.gschema.xml',
+  'land.rob.jamjar.gschema.xml',
   install_dir: datadir / 'glib-2.0' / 'schemas',
 )
 

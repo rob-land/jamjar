@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 
-@Gtk.Template(resource_path="/land/rob/Jamjar/queue-pane.ui")
+@Gtk.Template(resource_path="/land/rob/jamjar/queue-pane.ui")
 class QueuePage(Adw.NavigationPage):
     __gtype_name__ = "JamjarQueuePage"
 

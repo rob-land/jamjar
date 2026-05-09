@@ -20,7 +20,7 @@ log = logging.getLogger(__name__)
 DEBOUNCE_MS = 250
 
 
-@Gtk.Template(resource_path="/land/rob/Jamjar/search-page.ui")
+@Gtk.Template(resource_path="/land/rob/jamjar/search-page.ui")
 class SearchPage(Adw.NavigationPage):
     __gtype_name__ = "JamjarSearchPage"
 

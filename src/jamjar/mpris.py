@@ -12,7 +12,7 @@ from .queue import PlayQueue, RepeatMode
 
 log = logging.getLogger(__name__)
 
-BUS_NAME    = "org.mpris.MediaPlayer2.land.rob.Jamjar"
+BUS_NAME    = "org.mpris.MediaPlayer2.land.rob.jamjar"
 OBJECT_PATH = "/org/mpris/MediaPlayer2"
 
 
@@ -89,7 +89,7 @@ class MprisService:
 
             @dbus_property(access=PropertyAccess.READ)
             def DesktopEntry(self) -> "s":
-                return "land.rob.Jamjar"
+                return "land.rob.jamjar"
 
             @dbus_property(access=PropertyAccess.READ)
             def SupportedUriSchemes(self) -> "as":
@@ -161,7 +161,7 @@ class MprisService:
                 if track is None:
                     return {}
                 return {
-                    "mpris:trackid":     Variant("o", f"/land/rob/Jamjar/track/{track.id}"),
+                    "mpris:trackid":     Variant("o", f"/land/rob/jamjar/track/{track.id}"),
                     "mpris:length":      Variant("x", int(track.duration_seconds * 1_000_000)),
                     "xesam:title":       Variant("s", track.name),
                     "xesam:album":       Variant("s", track.album),

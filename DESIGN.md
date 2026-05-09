@@ -2,7 +2,7 @@
 
 A full-featured GTK4/libadwaita music app that runs adaptively on Linux phones (FuriOS/Phosh) and GNOME desktops, with Jellyfin as the backend. Discovers servers automatically over UDP/mDNS and supports both Quick Connect and username/password authentication.
 
-App ID suggestion: `land.rob.Jamjar` (placeholder — name as you like; "Jamjar", "Cantata", "Sonata", "Prelude" all fit the namespace).
+App ID suggestion: `land.rob.jamjar` (placeholder — name as you like; "Jamjar", "Cantata", "Sonata", "Prelude" all fit the namespace).
 
 ---
 
@@ -30,13 +30,13 @@ App ID suggestion: `land.rob.Jamjar` (placeholder — name as you like; "Jamjar"
 jamjar/
 ├── meson.build
 ├── build-aux/flatpak/
-│   └── land.rob.Jamjar.json
+│   └── land.rob.jamjar.json
 ├── data/
-│   ├── land.rob.Jamjar.desktop.in
-│   ├── land.rob.Jamjar.metainfo.xml.in
-│   ├── land.rob.Jamjar.gschema.xml
+│   ├── land.rob.jamjar.desktop.in
+│   ├── land.rob.jamjar.metainfo.xml.in
+│   ├── land.rob.jamjar.gschema.xml
 │   ├── icons/
-│   │   └── hicolor/scalable/apps/land.rob.Jamjar.svg
+│   │   └── hicolor/scalable/apps/land.rob.jamjar.svg
 │   └── ui/                          # Blueprint sources
 │       ├── window.blp
 │       ├── server-row.blp
@@ -219,7 +219,7 @@ import gi; gi.require_version("Secret", "1")
 from gi.repository import Secret
 
 SCHEMA = Secret.Schema.new(
-    "land.rob.Jamjar",
+    "land.rob.jamjar",
     Secret.SchemaFlags.NONE,
     {"server_id": Secret.SchemaAttributeType.STRING,
      "user_id":   Secret.SchemaAttributeType.STRING},
@@ -442,7 +442,7 @@ Songs view is a `GtkColumnView` on desktop (Title / Artist / Album / Duration co
 
 ### 10.1 MPRIS2
 
-A D-Bus interface at `org.mpris.MediaPlayer2.land.rob.Jamjar` exposes Play/Pause/Next/Previous and metadata. This is what makes media keys, the GNOME Shell quick settings panel, and the Phosh lock-screen controls all "just work". Implement with `dbus-next` (asyncio-friendly) on the same background loop as the API client.
+A D-Bus interface at `org.mpris.MediaPlayer2.land.rob.jamjar` exposes Play/Pause/Next/Previous and metadata. This is what makes media keys, the GNOME Shell quick settings panel, and the Phosh lock-screen controls all "just work". Implement with `dbus-next` (asyncio-friendly) on the same background loop as the API client.
 
 The two interfaces to implement: `org.mpris.MediaPlayer2` (Identity, DesktopEntry, Quit, Raise) and `org.mpris.MediaPlayer2.Player` (PlaybackStatus, Metadata, Position, properties + Play/Pause/Next/Previous/Seek/SetPosition methods + Seeked signal).
 
@@ -504,8 +504,8 @@ gnome.post_install(
 ### 11.2 Flatpak manifest
 
 ```yaml
-# build-aux/flatpak/land.rob.Jamjar.json
-app-id: land.rob.Jamjar
+# build-aux/flatpak/land.rob.jamjar.json
+app-id: land.rob.jamjar
 runtime: org.gnome.Platform
 runtime-version: '47'
 sdk: org.gnome.Sdk
@@ -519,7 +519,7 @@ finish-args:
   - --socket=pulseaudio
   - --device=dri
   - --talk-name=org.freedesktop.secrets
-  - --own-name=org.mpris.MediaPlayer2.land.rob.Jamjar
+  - --own-name=org.mpris.MediaPlayer2.land.rob.jamjar
   - --own-name=org.gnome.Shell.SearchProvider.Jamjar
   - --filesystem=xdg-music:ro
 
@@ -575,7 +575,7 @@ from .mpris import MprisService
 class JamjarApplication(Adw.Application):
     def __init__(self):
         super().__init__(
-            application_id='land.rob.Jamjar',
+            application_id='land.rob.jamjar',
             flags=Gio.ApplicationFlags.DEFAULT_FLAGS,
         )
         self.runner = AsyncRunner()

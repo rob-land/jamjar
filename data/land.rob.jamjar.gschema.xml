@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <schemalist gettext-domain="jamjar">
-  <enum id="land.rob.Jamjar.RepeatMode">
+  <enum id="land.rob.jamjar.RepeatMode">
     <value nick="off"  value="0"/>
     <value nick="all"  value="1"/>
     <value nick="one"  value="2"/>
   </enum>
 
-  <enum id="land.rob.Jamjar.Codec">
+  <enum id="land.rob.jamjar.Codec">
     <value nick="copy" value="0"/>
     <value nick="opus" value="1"/>
     <value nick="aac"  value="2"/>
@@ -14,13 +14,13 @@
     <value nick="flac" value="4"/>
   </enum>
 
-  <enum id="land.rob.Jamjar.ColorScheme">
+  <enum id="land.rob.jamjar.ColorScheme">
     <value nick="default" value="0"/>
     <value nick="light"   value="1"/>
     <value nick="dark"    value="2"/>
   </enum>
 
-  <schema id="land.rob.Jamjar" path="/land/rob/Jamjar/">
+  <schema id="land.rob.jamjar" path="/land/rob/jamjar/">
     <key name="device-id" type="s">
       <default>""</default>
       <summary>Stable device identifier</summary>
@@ -45,17 +45,17 @@
       <summary>Cached base URL of the last server</summary>
     </key>
 
-    <key name="color-scheme" enum="land.rob.Jamjar.ColorScheme">
+    <key name="color-scheme" enum="land.rob.jamjar.ColorScheme">
       <default>"default"</default>
       <summary>Color scheme preference</summary>
     </key>
 
-    <key name="codec-wifi" enum="land.rob.Jamjar.Codec">
+    <key name="codec-wifi" enum="land.rob.jamjar.Codec">
       <default>"copy"</default>
       <summary>Audio codec when on Wi-Fi</summary>
     </key>
 
-    <key name="codec-mobile" enum="land.rob.Jamjar.Codec">
+    <key name="codec-mobile" enum="land.rob.jamjar.Codec">
       <default>"opus"</default>
       <summary>Audio codec when on cellular</summary>
     </key>
@@ -70,7 +70,7 @@
       <summary>Max streaming bitrate (bps) on cellular</summary>
     </key>
 
-    <key name="repeat-mode" enum="land.rob.Jamjar.RepeatMode">
+    <key name="repeat-mode" enum="land.rob.jamjar.RepeatMode">
       <default>"off"</default>
       <summary>Queue repeat mode</summary>
     </key>

@@ -20,7 +20,7 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 
-@Gtk.Template(resource_path="/land/rob/Jamjar/login-dialog.ui")
+@Gtk.Template(resource_path="/land/rob/jamjar/login-dialog.ui")
 class LoginDialog(Adw.Dialog):
     __gtype_name__ = "JamjarLoginDialog"
     __gsignals__ = {

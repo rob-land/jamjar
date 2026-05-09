@@ -1,5 +1,5 @@
 {
-  "app-id": "land.rob.Jamjar",
+  "app-id": "land.rob.jamjar",
   "runtime": "org.gnome.Platform",
   "runtime-version": "50",
   "sdk": "org.gnome.Sdk",
@@ -12,7 +12,7 @@
     "--socket=pulseaudio",
     "--device=dri",
     "--talk-name=org.freedesktop.secrets",
-    "--own-name=org.mpris.MediaPlayer2.land.rob.Jamjar",
+    "--own-name=org.mpris.MediaPlayer2.land.rob.jamjar",
     "--own-name=org.gnome.Shell.SearchProvider.Jamjar",
     "--filesystem=xdg-music:ro"
   ],

@@ -23,7 +23,7 @@ from .sleep_timer import SleepTimer
 
 log = logging.getLogger(__name__)
 
-APP_ID = "land.rob.Jamjar"
+APP_ID = "land.rob.jamjar"
 
 
 class JamjarApplication(Adw.Application):
@@ -286,7 +286,7 @@ class JamjarApplication(Adw.Application):
     def _load_css(self) -> None:
         provider = Gtk.CssProvider()
         try:
-            provider.load_from_resource("/land/rob/Jamjar/style.css")
+            provider.load_from_resource("/land/rob/jamjar/style.css")
         except GLib.Error as e:
             log.debug("CSS not loaded: %s", e.message)
             return

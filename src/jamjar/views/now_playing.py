@@ -34,7 +34,7 @@ def _next_repeat(mode: RepeatMode) -> RepeatMode:
     return RepeatMode((int(mode) + 1) % 3)
 
 
-@Gtk.Template(resource_path="/land/rob/Jamjar/now-playing-bar.ui")
+@Gtk.Template(resource_path="/land/rob/jamjar/now-playing-bar.ui")
 class NowPlayingBar(Gtk.Box):
     __gtype_name__ = "JamjarNowPlayingBar"
 
@@ -287,7 +287,7 @@ class NowPlayingBar(Gtk.Box):
         self.volume_button.set_icon_name(icon)
 
 
-@Gtk.Template(resource_path="/land/rob/Jamjar/now-playing-page.ui")
+@Gtk.Template(resource_path="/land/rob/jamjar/now-playing-page.ui")
 class NowPlayingPage(Adw.NavigationPage):
     __gtype_name__ = "JamjarNowPlayingPage"
 

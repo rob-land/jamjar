@@ -33,12 +33,12 @@ jobs:
       - name: Build flatpak (x86_64)
         run: |
           flatpak-builder --user --repo=repo --force-clean _flatpak \
-            build-aux/flatpak/land.rob.Jamjar.json
+            build-aux/flatpak/land.rob.jamjar.json
 
       - name: Bundle
         run: |
           flatpak build-bundle --arch=x86_64 repo \
-            jamjar-x86_64.flatpak land.rob.Jamjar
+            jamjar-x86_64.flatpak land.rob.jamjar
 
       - name: Upload bundle as artifact
         uses: actions/upload-artifact@v4

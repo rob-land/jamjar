@@ -1,5 +1,5 @@
-data/land.rob.Jamjar.desktop.in
-data/land.rob.Jamjar.metainfo.xml.in
+data/land.rob.jamjar.desktop.in
+data/land.rob.jamjar.metainfo.xml.in
 data/ui/window.blp
 data/ui/server-row.blp
 data/ui/login-dialog.blp

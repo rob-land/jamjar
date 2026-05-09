@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 
-@Gtk.Template(resource_path="/land/rob/Jamjar/home-page.ui")
+@Gtk.Template(resource_path="/land/rob/jamjar/home-page.ui")
 class HomePage(Adw.NavigationPage):
     __gtype_name__ = "JamjarHomePage"
 

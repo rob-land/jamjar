@@ -2,7 +2,7 @@
 
 A full-featured Jellyfin music client for **GNOME desktop** and **Phosh** (Linux phones — particularly the FuriLabs FLX1s). Built with GTK4 / libadwaita / Python, packaged as a Flatpak, with adaptive layouts that work in both portrait phone and docked desktop (NexDock XL) modes.
 
-App ID: `land.rob.Jamjar`
+App ID: `land.rob.jamjar`
 
 This file is the orientation document for Claude Code working on this repo. The full architecture is in [`DESIGN.md`](./DESIGN.md) — read that first for any non-trivial change. The current backlog and prioritisation rationale live in [`TODO.md`](./TODO.md).
 
@@ -61,15 +61,15 @@ jamjar/
 ├── TODO.md                          # backlog + prioritisation rationale
 ├── README.md
 ├── build-aux/flatpak/
-│   └── land.rob.Jamjar.json
+│   └── land.rob.jamjar.json
 ├── data/
-│   ├── land.rob.Jamjar.desktop.in
-│   ├── land.rob.Jamjar.metainfo.xml.in
-│   ├── land.rob.Jamjar.gschema.xml
+│   ├── land.rob.jamjar.desktop.in
+│   ├── land.rob.jamjar.metainfo.xml.in
+│   ├── land.rob.jamjar.gschema.xml
 │   ├── icons/hicolor/
-│   │   ├── scalable/apps/land.rob.Jamjar.svg
+│   │   ├── scalable/apps/land.rob.jamjar.svg
 │   │   ├── scalable/actions/heart-outline-symbolic.svg
-│   │   └── symbolic/apps/land.rob.Jamjar-symbolic.svg
+│   │   └── symbolic/apps/land.rob.jamjar-symbolic.svg
 │   ├── screenshots/                 # referenced by metainfo.xml.in
 │   └── ui/                          # Blueprint sources → .ui → GResource
 │       ├── window.blp
@@ -159,7 +159,7 @@ UI is authored in `.blp` Blueprint syntax and compiled to `.ui` at build time, t
 
 ### GSettings, not config files
 
-Schema lives in `data/land.rob.Jamjar.gschema.xml`. Anything user-tweakable goes through GSettings: theme, default codec, max bitrate (Wi-Fi vs cellular split), sleep timer default, last-used server ID, equalizer preset, repeat/shuffle state.
+Schema lives in `data/land.rob.jamjar.gschema.xml`. Anything user-tweakable goes through GSettings: theme, default codec, max bitrate (Wi-Fi vs cellular split), sleep timer default, last-used server ID, equalizer preset, repeat/shuffle state.
 
 ### Secrets
 
@@ -281,7 +281,7 @@ For offline downloads, use `/Audio/{id}/universal?static=true` to bypass transco
 
 ## System integration
 
-- **MPRIS2** at `org.mpris.MediaPlayer2.land.rob.Jamjar` — required, not optional. This is what makes media keys, GNOME Shell quick settings, and the Phosh lock-screen controls work.
+- **MPRIS2** at `org.mpris.MediaPlayer2.land.rob.jamjar` — required, not optional. This is what makes media keys, GNOME Shell quick settings, and the Phosh lock-screen controls work.
 - **Media key fallback** via `Gtk.EventControllerKey` on the window for compositors that don't pick up MPRIS.
 - **GNOME Shell search provider** (`org.gnome.Shell.SearchProvider2`) — small effort, nice polish. Lets users hit Super and type a song title.
 - **`Gio.Notification`** for "Now Playing" with action buttons (Pause, Next).
@@ -300,7 +300,7 @@ finish-args:
   - --socket=pulseaudio
   - --device=dri
   - --talk-name=org.freedesktop.secrets
-  - --own-name=org.mpris.MediaPlayer2.land.rob.Jamjar
+  - --own-name=org.mpris.MediaPlayer2.land.rob.jamjar
   - --own-name=org.gnome.Shell.SearchProvider.Jamjar
   - --filesystem=xdg-music:ro
 ```
@@ -331,7 +331,7 @@ Notable: `--talk-name=org.freedesktop.secrets` for libsecret access, and the two
 
 ## Naming history
 
-The project was briefly called **Aria**, then renamed to **Jamjar** because the Aria name was already taken in the Linux music player space. The jar metaphor fits a curated music collection well, sits comfortably alongside modern playful GNOME app names (Loupe, Snapshot, Showtime, Decibels), and the `land.rob.Jamjar` app ID is unique across Flathub and AppStream as of project start.
+The project was briefly called **Aria**, then renamed to **Jamjar** because the Aria name was already taken in the Linux music player space. The jar metaphor fits a curated music collection well, sits comfortably alongside modern playful GNOME app names (Loupe, Snapshot, Showtime, Decibels), and the `land.rob.jamjar` app ID is unique across Flathub and AppStream as of project start.
 
 ---
 

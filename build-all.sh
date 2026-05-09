@@ -95,9 +95,9 @@ for arch in "${ARCHES[@]}"; do
     echo
     echo "==== Building Jamjar for ${arch} ===="
     flatpak-builder --arch="$arch" --repo=repo --force-clean \
-        "$builddir" build-aux/flatpak/land.rob.Jamjar.json
+        "$builddir" build-aux/flatpak/land.rob.jamjar.json
     echo "==== Bundling ${bundle} ===="
-    flatpak build-bundle --arch="$arch" repo "$bundle" land.rob.Jamjar
+    flatpak build-bundle --arch="$arch" repo "$bundle" land.rob.jamjar
     ls -lh "$bundle"
 done
 

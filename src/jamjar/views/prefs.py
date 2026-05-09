@@ -5,7 +5,7 @@ from __future__ import annotations
 from gi.repository import Adw, Gio, Gtk
 
 
-@Gtk.Template(resource_path="/land/rob/Jamjar/prefs.ui")
+@Gtk.Template(resource_path="/land/rob/jamjar/prefs.ui")
 class PreferencesDialog(Adw.PreferencesDialog):
     __gtype_name__ = "JamjarPreferences"
 

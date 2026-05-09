@@ -16,7 +16,7 @@ localedir   = prefix / get_option('localedir')
 pkgdatadir  = datadir / meson.project_name()
 moduledir   = python.get_install_dir() / 'jamjar'
 
-application_id          = 'land.rob.Jamjar'
+application_id          = 'land.rob.jamjar'
 gettext_package = meson.project_name()
 
 # Bare-string substitutions for XML/desktop files (no surrounding quotes).

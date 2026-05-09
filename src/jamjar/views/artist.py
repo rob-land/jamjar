@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     from ..window import JamjarWindow
 
 
-@Gtk.Template(resource_path="/land/rob/Jamjar/artist-page.ui")
+@Gtk.Template(resource_path="/land/rob/jamjar/artist-page.ui")
 class ArtistPage(Adw.NavigationPage):
     __gtype_name__ = "JamjarArtistPage"
 
