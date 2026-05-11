@@ -1,0 +1,131 @@
+{
+  "name": "python3-deps",
+  "buildsystem": "simple",
+  "build-commands": [],
+  "modules": [
+    {
+      "name": "python3-poetry-core",
+      "buildsystem": "simple",
+      "build-commands": [
+        "pip3 install --verbose --exists-action=i --no-index --find-links=\"file://${PWD}\" --prefix=${FLATPAK_DEST} \"poetry-core\" --no-build-isolation"
+      ],
+      "sources": [
+        {
+          "type": "file",
+          "url": "https://files.pythonhosted.org/packages/0e/38/646023abf93e47c6808cbee82423324505ec075d7b90a22654765e1eade7/poetry_core-2.3.2-py3-none-any.whl",
+          "sha256": "23df641b64f87fbb4ce1873c1915a4d4bb1b7d808c596e4307edc073e68d7234"
+        }
+      ]
+    },
+    {
+      "name": "python3-aiohttp",
+      "buildsystem": "simple",
+      "build-commands": [
+        "pip3 install --verbose --exists-action=i --no-index --find-links=\"file://${PWD}\" --prefix=${FLATPAK_DEST} \"aiohttp\" --no-build-isolation"
+      ],
+      "sources": [
+        {
+          "type": "file",
+          "url": "https://files.pythonhosted.org/packages/0f/15/5bf3b99495fb160b63f95972b81750f18f7f4e02ad051373b669d17d44f2/aiohappyeyeballs-2.6.1-py3-none-any.whl",
+          "sha256": "f349ba8f4b75cb25c99c5c2d84e997e485204d2902a9597802b0371f09331fb8"
+        },
+        {
+          "type": "file",
+          "url": "https://files.pythonhosted.org/packages/f0/d2/e2f77eef1acb7111405433c707dc735e63f67a56e176e72e9e7a2cd3f493/aiohttp-3.13.5-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
+          "sha256": "3df334e39d4c2f899a914f1dba283c1aadc311790733f705182998c6f7cae665",
+          "only-arches": [
+            "x86_64"
+          ]
+        },
+        {
+          "type": "file",
+          "url": "https://files.pythonhosted.org/packages/3b/86/b7c870053e36a94e8951b803cb5b909bfbc9b90ca941527f5fcafbf6b0fa/aiohttp-3.13.5-cp313-cp313-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl",
+          "sha256": "57653eac22c6a4c13eb22ecf4d673d64a12f266e72785ab1c8b8e5940d0e8090",
+          "only-arches": [
+            "aarch64"
+          ]
+        },
+        {
+          "type": "file",
+          "url": "https://files.pythonhosted.org/packages/fb/76/641ae371508676492379f16e2fa48f4e2c11741bd63c48be4b12a6b09cba/aiosignal-1.4.0-py3-none-any.whl",
+          "sha256": "053243f8b92b990551949e63930a839ff0cf0b0ebbe0597b0f3fb19e1a0fe82e"
+        },
+        {
+          "type": "file",
+          "url": "https://files.pythonhosted.org/packages/64/b4/17d4b0b2a2dc85a6df63d1157e028ed19f90d4cd97c36717afef2bc2f395/attrs-26.1.0-py3-none-any.whl",
+          "sha256": "c647aa4a12dfbad9333ca4e71fe62ddc36f4e63b2d260a37a8b83d2f043ac309"
+        },
+        {
+          "type": "file",
+          "url": "https://files.pythonhosted.org/packages/9a/9a/e35b4a917281c0b8419d4207f4334c8e8c5dbf4f3f5f9ada73958d937dcc/frozenlist-1.8.0-py3-none-any.whl",
+          "sha256": "0c18a16eab41e82c295618a77502e17b195883241c563b00f0aa5106fc4eaa0d"
+        },
+        {
+          "type": "file",
+          "url": "https://files.pythonhosted.org/packages/5d/13/ad7d7ca3808a898b4612b6fe93cde56b53f3034dcde235acb1f0e1df24c6/idna-3.13-py3-none-any.whl",
+          "sha256": "892ea0cde124a99ce773decba204c5552b69c3c67ffd5f232eb7696135bc8bb3"
+        },
+        {
+          "type": "file",
+          "url": "https://files.pythonhosted.org/packages/81/08/7036c080d7117f28a4af526d794aab6a84463126db031b007717c1a6676e/multidict-6.7.1-py3-none-any.whl",
+          "sha256": "55d97cc6dae627efa6a6e548885712d4864b81110ac76fa4e534c03819fa4a56"
+        },
+        {
+          "type": "file",
+          "url": "https://files.pythonhosted.org/packages/5b/5a/bc7b4a4ef808fa59a816c17b20c4bef6884daebbdf627ff2a161da67da19/propcache-0.4.1-py3-none-any.whl",
+          "sha256": "af2a6052aeb6cf17d3e46ee169099044fd8224cbaf75c76a2ef596e8163e2237"
+        },
+        {
+          "type": "file",
+          "url": "https://files.pythonhosted.org/packages/69/68/c8739671f5699c7dc470580a4f821ef37c32c4cb0b047ce223a7f115757f/yarl-1.23.0-py3-none-any.whl",
+          "sha256": "a2df6afe50dea8ae15fa34c9f824a3ee958d785fd5d089063d960bae1daa0a3f"
+        }
+      ]
+    },
+    {
+      "name": "python3-zeroconf",
+      "buildsystem": "simple",
+      "build-commands": [
+        "pip3 install --verbose --exists-action=i --no-index --find-links=\"file://${PWD}\" --prefix=${FLATPAK_DEST} \"zeroconf\" --no-build-isolation"
+      ],
+      "sources": [
+        {
+          "type": "file",
+          "url": "https://files.pythonhosted.org/packages/9c/1f/19ebc343cc71a7ffa78f17018535adc5cbdd87afb31d7c34874680148b32/ifaddr-0.2.0-py3-none-any.whl",
+          "sha256": "085e0305cfe6f16ab12d72e2024030f5d52674afad6911bb1eee207177b8a748"
+        },
+        {
+          "type": "file",
+          "url": "https://files.pythonhosted.org/packages/59/ff/c7372507c7e25ad3499fe08d4678deb1ed41c57f78ff5df43bd2d4d98cfc/zeroconf-0.148.0-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
+          "sha256": "cc88fd01b5552ffb4d5bc551d027ac28a1852c03ceab754d02bd0d5f04c54e85",
+          "only-arches": [
+            "x86_64"
+          ]
+        },
+        {
+          "type": "file",
+          "url": "https://files.pythonhosted.org/packages/54/6c/b3e2d39c40802a8cc9415357acdb76ff01bc29e25ffaa811771b6fffc428/zeroconf-0.148.0-cp313-cp313-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl",
+          "sha256": "f2995e74969c577461060539164c47e1ba674470585cb0f954ebeb77f032f3c2",
+          "only-arches": [
+            "aarch64"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "python3-dbus-next",
+      "buildsystem": "simple",
+      "build-commands": [
+        "pip3 install --verbose --exists-action=i --no-index --find-links=\"file://${PWD}\" --prefix=${FLATPAK_DEST} \"dbus-next\" --no-build-isolation"
+      ],
+      "sources": [
+        {
+          "type": "file",
+          "url": "https://files.pythonhosted.org/packages/d2/fc/c0a3f4c4eaa5a22fbef91713474666e13d0ea2a69c84532579490a9f2cc8/dbus_next-0.2.3-py3-none-any.whl",
+          "sha256": "58948f9aff9db08316734c0be2a120f6dc502124d9642f55e90ac82ffb16a18b"
+        }
+      ]
+    }
+  ],
+  "sources": []
+}
