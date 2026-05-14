@@ -56,11 +56,23 @@ class Scrobbler(GObject.Object):
             self._stop_progress_timer()
 
     def _on_state_changed(self, _player, state: str) -> None:
+        was_paused = self._is_paused
         self._is_paused = (state == "paused")
         if state == "stopped":
             self._send_stopped()
             self._stop_progress_timer()
             self._current = None
+            return
+        # Send an immediate progress report on a pause↔play flip so MPRIS
+        # observers (GNOME Shell quick settings, Phosh lockscreen, etc.)
+        # and the Jellyfin dashboard learn the new state without waiting
+        # up to PROGRESS_INTERVAL_MS for the next tick. Filter to actual
+        # transitions so the NULL→READY→PAUSED→PLAYING ramp-up at track
+        # start doesn't fan out multiple "playing" reports.
+        if state in ("playing", "paused") \
+                and was_paused != self._is_paused \
+                and self._current is not None:
+            self._send_progress()
 
     def _on_position_changed(self, _player, seconds: float) -> None:
         self._position_seconds = seconds
