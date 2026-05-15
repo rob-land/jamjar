@@ -40,6 +40,7 @@ py_conf.set_quoted('GETTEXT_PACKAGE', gettext_package)
 subdir('data')
 subdir('src/jamjar')
 subdir('po')
+subdir('tests')
 
 gnome.post_install(
   glib_compile_schemas: true,
