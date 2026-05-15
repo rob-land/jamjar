@@ -124,9 +124,16 @@ either way.
 
 ## Tier 2 — moderate effort, common expectations
 
-### 7. Drag-to-reorder queue
-Currently the queue page only supports remove and jump. Add drag handles or
-press-and-hold drag on the rows so users can reorder upcoming tracks.
+### 7. Drag-to-reorder queue — done
+Each queue row has a `list-drag-handle-symbolic` grip at its leading
+edge. `Gtk.DragSource` on the handle emits the source queue index as a
+GValue(int); a `Gtk.DropTarget` on the destination row reads it and
+calls `Queue.move(src, target)` — which handles play-head adjustment
+so the currently-playing track stays "current" across a reorder.
+Dropping a row onto itself is a no-op so the user doesn't have to
+aim outside the row to cancel. The row's tap-to-jump gesture is
+preserved because the drag source is gated on the handle icon, not
+the ActionRow body.
 
 ### 8. Add to playlist + playlist editing
 Wire "Add to playlist" (from the new context menu) to a dialog that lists the

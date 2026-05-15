@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
-from gi.repository import Adw, GLib, Gtk
+from gi.repository import Adw, Gdk, GLib, GObject, Gtk
 
 from ._common import escape_markup, favorite_heart, format_duration
 from .track_menu import install_track_menu
@@ -62,6 +62,21 @@ class QueuePage(Adw.NavigationPage):
                 subtitle=escape_markup(track.primary_artist),
                 activatable=True,
             )
+
+            # Drag handle — a grab icon at the start of each row. The
+            # whole row could act as a DragSource, but pressing on the
+            # body of an ActionRow is a click-to-jump gesture; gating
+            # the drag on the handle icon keeps both interactions
+            # discoverable. The grab handle also signals to the user
+            # that the row is reorderable, which a context-menu-only
+            # affordance wouldn't.
+            handle = Gtk.Image.new_from_icon_name("list-drag-handle-symbolic")
+            handle.add_css_class("dim-label")
+            handle.set_valign(Gtk.Align.CENTER)
+            handle.set_tooltip_text("Drag to reorder")
+            self._install_drag_source(handle, index)
+            row.add_prefix(handle)
+
             num = Gtk.Label(label=str(index + 1), width_chars=3)
             num.add_css_class("dim-label")
             num.add_css_class("numeric")
@@ -89,8 +104,52 @@ class QueuePage(Adw.NavigationPage):
 
             row.connect("activated", lambda _r, i=index: self._jump(i))
             install_track_menu(row, lambda t=track: t, self.app, self.window)
+            self._install_drop_target(row, index)
             self.queue_list.append(row)
         return False
+
+    # ------------------------------------------------------------------
+    # Drag-to-reorder
+    #
+    # GTK4 doesn't have a built-in reorderable ListBox; we add a
+    # DragSource on the grab handle and a DropTarget on each row,
+    # exchanging the source index via an int-typed ContentProvider.
+    # Queue.move() handles the play-head adjustment so the
+    # currently-playing track stays "current" across a reorder.
+    # ------------------------------------------------------------------
+
+    def _install_drag_source(self, widget: Gtk.Widget, index: int) -> None:
+        src = Gtk.DragSource.new()
+        src.set_actions(Gdk.DragAction.MOVE)
+
+        def on_prepare(_src, _x, _y):
+            value = GObject.Value()
+            value.init(GObject.TYPE_INT)
+            value.set_int(index)
+            return Gdk.ContentProvider.new_for_value(value)
+
+        src.connect("prepare", on_prepare)
+        widget.add_controller(src)
+
+    def _install_drop_target(self, row: Gtk.Widget, target_index: int) -> None:
+        # We accept ints (queue source index); dropping with src==target
+        # is a no-op so the user doesn't have to release outside the row.
+        target = Gtk.DropTarget.new(int, Gdk.DragAction.MOVE)
+
+        def on_drop(_t, value, _x, _y):
+            try:
+                src_index = int(value)
+            except (TypeError, ValueError):
+                return False
+            if src_index == target_index:
+                return False
+            if self.app.queue is None:
+                return False
+            self.app.queue.move(src_index, target_index)
+            return True
+
+        target.connect("drop", on_drop)
+        row.add_controller(target)
 
     def _on_favorite_changed_external(self, _app, item_id: str, is_favorite: bool) -> None:
         for heart in self._row_hearts.get(item_id, ()):
