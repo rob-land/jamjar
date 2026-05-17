@@ -22,64 +22,90 @@ template $JamjarAlbumPage: Adw.NavigationPage {
           margin-top: 12;
           margin-bottom: 12;
 
-          Box header_box {
-            orientation: horizontal;
-            spacing: 18;
+          Adw.BreakpointBin {
+            width-request: 280;
+            height-request: 200;
 
-            Picture cover_picture {
-              width-request: 200;
-              height-request: 200;
-              content-fit: cover;
+            Adw.Breakpoint {
+              condition ("max-width: 500sp")
 
-              styles ["cover"]
+              setters {
+                header_box.orientation: vertical;
+                cover_picture.halign: center;
+                header_meta_box.halign: center;
+                album_title_label.halign: center;
+                album_title_label.xalign: 0.5;
+                album_title_label.justify: center;
+                album_artist_label.halign: center;
+                album_artist_label.xalign: 0.5;
+                album_artist_label.justify: center;
+                album_meta_label.halign: center;
+                album_meta_label.xalign: 0.5;
+                header_actions_box.halign: center;
+              }
             }
 
-            Box {
-              orientation: vertical;
-              spacing: 6;
-              hexpand: true;
-              valign: center;
+            Box header_box {
+              orientation: horizontal;
+              spacing: 18;
 
-              Label album_title_label {
-                xalign: 0;
-                wrap: true;
+              Picture cover_picture {
+                width-request: 200;
+                height-request: 200;
+                content-fit: cover;
 
-                styles ["title-1"]
+                styles ["cover"]
               }
 
-              Label album_artist_label {
-                xalign: 0;
-                wrap: true;
-
-                styles ["dim-label"]
-              }
-
-              Label album_meta_label {
-                xalign: 0;
-
-                styles ["caption", "dim-label"]
-              }
-
-              Box {
-                orientation: horizontal;
+              Box header_meta_box {
+                orientation: vertical;
                 spacing: 6;
-                margin-top: 6;
+                hexpand: true;
+                valign: center;
 
-                Button play_button {
-                  label: _("Play");
+                Label album_title_label {
+                  xalign: 0;
+                  wrap: true;
+                  wrap-mode: word_char;
 
-                  styles ["suggested-action", "pill"]
+                  styles ["title-1"]
                 }
 
-                Button shuffle_button {
-                  label: _("Shuffle");
+                Label album_artist_label {
+                  xalign: 0;
+                  wrap: true;
+                  wrap-mode: word_char;
 
-                  styles ["pill"]
+                  styles ["dim-label"]
                 }
 
-                ToggleButton favorite_button {
-                  icon-name: "heart-outline-symbolic";
-                  tooltip-text: _("Favorite");
+                Label album_meta_label {
+                  xalign: 0;
+
+                  styles ["caption", "dim-label"]
+                }
+
+                Box header_actions_box {
+                  orientation: horizontal;
+                  spacing: 6;
+                  margin-top: 6;
+
+                  Button play_button {
+                    label: _("Play");
+
+                    styles ["suggested-action", "pill"]
+                  }
+
+                  Button shuffle_button {
+                    label: _("Shuffle");
+
+                    styles ["pill"]
+                  }
+
+                  ToggleButton favorite_button {
+                    icon-name: "heart-outline-symbolic";
+                    tooltip-text: _("Favorite");
+                  }
                 }
               }
             }

@@ -22,45 +22,67 @@ template $JamjarArtistPage: Adw.NavigationPage {
           margin-top: 12;
           margin-bottom: 12;
 
-          Box {
-            orientation: horizontal;
-            spacing: 18;
+          Adw.BreakpointBin {
+            width-request: 280;
+            height-request: 160;
 
-            Picture artist_image {
-              width-request: 160;
-              height-request: 160;
-              content-fit: cover;
+            Adw.Breakpoint {
+              condition ("max-width: 500sp")
 
-              styles ["cover"]
+              setters {
+                artist_header_box.orientation: vertical;
+                artist_image.halign: center;
+                artist_meta_box.halign: center;
+                artist_name_label.halign: center;
+                artist_name_label.xalign: 0.5;
+                artist_name_label.justify: center;
+                artist_meta_label.halign: center;
+                artist_meta_label.xalign: 0.5;
+                artist_actions_box.halign: center;
+              }
             }
 
-            Box {
-              orientation: vertical;
-              spacing: 6;
-              hexpand: true;
-              valign: center;
+            Box artist_header_box {
+              orientation: horizontal;
+              spacing: 18;
 
-              Label artist_name_label {
-                xalign: 0;
-                wrap: true;
+              Picture artist_image {
+                width-request: 160;
+                height-request: 160;
+                content-fit: cover;
 
-                styles ["title-1"]
+                styles ["cover"]
               }
 
-              Label artist_meta_label {
-                xalign: 0;
-
-                styles ["caption", "dim-label"]
-              }
-
-              Box {
-                orientation: horizontal;
+              Box artist_meta_box {
+                orientation: vertical;
                 spacing: 6;
-                margin-top: 6;
+                hexpand: true;
+                valign: center;
 
-                ToggleButton favorite_button {
-                  icon-name: "heart-outline-symbolic";
-                  tooltip-text: _("Favorite");
+                Label artist_name_label {
+                  xalign: 0;
+                  wrap: true;
+                  wrap-mode: word_char;
+
+                  styles ["title-1"]
+                }
+
+                Label artist_meta_label {
+                  xalign: 0;
+
+                  styles ["caption", "dim-label"]
+                }
+
+                Box artist_actions_box {
+                  orientation: horizontal;
+                  spacing: 6;
+                  margin-top: 6;
+
+                  ToggleButton favorite_button {
+                    icon-name: "heart-outline-symbolic";
+                    tooltip-text: _("Favorite");
+                  }
                 }
               }
             }

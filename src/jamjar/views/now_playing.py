@@ -39,9 +39,12 @@ class NowPlayingBar(Gtk.Box):
     __gtype_name__ = "JamjarNowPlayingBar"
 
     cover               = Gtk.Template.Child()
+    text_box            = Gtk.Template.Child()
     title_label         = Gtk.Template.Child()
     artist_label        = Gtk.Template.Child()
+    prev_button         = Gtk.Template.Child()
     play_pause_button   = Gtk.Template.Child()
+    next_button         = Gtk.Template.Child()
     progress_scale      = Gtk.Template.Child()
     progress_adjustment = Gtk.Template.Child()
     position_label      = Gtk.Template.Child()
@@ -68,6 +71,14 @@ class NowPlayingBar(Gtk.Box):
         self.shuffle_button.connect("toggled", self._on_shuffle_toggled)
         self.repeat_button.connect("clicked", self._on_repeat_clicked)
         self._wire_volume_button()
+        # In compact mode the expand_button is hidden, so let a tap on the
+        # cover/title area open the full Now Playing page instead.
+        self._compact_tap = Gtk.GestureClick.new()
+        self._compact_tap.connect("released", self._on_compact_tap)
+        self.text_box.add_controller(self._compact_tap)
+        self._cover_tap = Gtk.GestureClick.new()
+        self._cover_tap.connect("released", self._on_compact_tap)
+        self.cover.add_controller(self._cover_tap)
         self.connect("notify::compact", self._on_compact_changed)
         self._on_compact_changed()
 
@@ -95,12 +106,17 @@ class NowPlayingBar(Gtk.Box):
         self._refresh_volume_icon(player.volume)
 
     def _on_compact_changed(self, *_):
-        # In compact mode, hide the long-form widgets to fit a phone width.
+        # In compact mode, strip down to cover + title + play/pause + next so the
+        # bar fits a 360sp-wide phone (FLX1s portrait). Prev and the expand
+        # button drop out; tap the cover/title area to open the Now Playing page.
         wide = not self.compact
         for w in (self.progress_scale, self.position_label, self.duration_label,
                   self.favorite_button, self.shuffle_button, self.repeat_button,
-                  self.volume_button):
+                  self.volume_button, self.prev_button, self.expand_button):
             w.set_visible(wide)
+        # Title/artist column needs a generous min in desktop mode (so the
+        # progress scale doesn't crush it) but can shrink freely on phone.
+        self.text_box.set_size_request(120 if wide else 0, -1)
 
     def _on_track(self, _player, track) -> None:
         if track is None:
@@ -172,6 +188,13 @@ class NowPlayingBar(Gtk.Box):
         return False
 
     def _on_expand(self, _button) -> None:
+        win = self.get_root()
+        if hasattr(win, "show_now_playing"):
+            win.show_now_playing()
+
+    def _on_compact_tap(self, _gesture, _n_press, _x, _y) -> None:
+        if not self.compact:
+            return
         win = self.get_root()
         if hasattr(win, "show_now_playing"):
             win.show_now_playing()
