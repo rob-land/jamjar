@@ -17,6 +17,12 @@ This file is the orientation document for Claude Code working on this repo. The 
 
 ---
 
+## Code quality
+
+A core goal is well-structured, readable code that follows idiomatic Python (PEP 8) and GNOME / libadwaita conventions; the cohort-shared [`STYLE_GUIDE.md`](STYLE_GUIDE.md) layers on top. When existing code doesn't meet that bar, refactor rather than perpetuate the pattern.
+
+---
+
 ## Before making changes
 
 Read [`STYLE_GUIDE.md`](STYLE_GUIDE.md) first when touching any of:
