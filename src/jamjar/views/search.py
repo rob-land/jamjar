@@ -32,7 +32,7 @@ class SearchPage(Adw.NavigationPage):
     artists_group  = Gtk.Template.Child()
     empty_state    = Gtk.Template.Child()
 
-    def __init__(self, app: "JamjarApplication", window: "JamjarWindow") -> None:
+    def __init__(self, app: JamjarApplication, window: JamjarWindow) -> None:
         super().__init__()
         self.app = app
         self.window = window

@@ -6,9 +6,16 @@ from typing import TYPE_CHECKING
 
 from gi.repository import Adw, Gtk
 
-from ._common import (apply_favorite_visual, commit_favorite, escape_markup,
-                       favorite_heart, format_duration, load_remote_image_async,
-                       make_link_label, open_artist_by_id)
+from ._common import (
+    apply_favorite_visual,
+    commit_favorite,
+    escape_markup,
+    favorite_heart,
+    format_duration,
+    load_remote_image_async,
+    make_link_label,
+    open_artist_by_id,
+)
 from .track_menu import install_track_menu
 
 if TYPE_CHECKING:
@@ -29,7 +36,7 @@ class AlbumPage(Adw.NavigationPage):
     favorite_button     = Gtk.Template.Child()
     tracks_list         = Gtk.Template.Child()
 
-    def __init__(self, app: "JamjarApplication", window: "JamjarWindow", album) -> None:
+    def __init__(self, app: JamjarApplication, window: JamjarWindow, album) -> None:
         super().__init__()
         self.app = app
         self.window = window

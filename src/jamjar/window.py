@@ -3,19 +3,22 @@
 from __future__ import annotations
 
 import logging
-from typing import Optional
+from typing import TYPE_CHECKING
 
-from gi.repository import Adw, Gdk, GLib, GObject, Gio, Gtk
+from gi.repository import Adw, Gdk, Gio, GLib, Gtk
 
-from .views.home import HomePage
-from .views.library import LibraryPage
+if TYPE_CHECKING:
+    from .application import JamjarApplication
+
 from .views.album import AlbumPage
 from .views.artist import ArtistPage
-from .views.playlist import PlaylistPage
-from .views.search import SearchPage
-from .views.now_playing import NowPlayingBar, NowPlayingPage
-from .views.queue import QueuePage
+from .views.home import HomePage
+from .views.library import LibraryPage
 from .views.login import LoginDialog
+from .views.now_playing import NowPlayingPage
+from .views.playlist import PlaylistPage
+from .views.queue import QueuePage
+from .views.search import SearchPage
 
 log = logging.getLogger(__name__)
 
@@ -45,7 +48,7 @@ class JamjarWindow(Adw.ApplicationWindow):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.app: "JamjarApplication" = self.get_application()  # type: ignore[assignment]
+        self.app: JamjarApplication = self.get_application()  # type: ignore[assignment]
         self._pages: dict[str, Adw.NavigationPage] = {}
         self._current_top_level: str = "home"
         self._install_help_overlay()
@@ -165,7 +168,7 @@ class JamjarWindow(Adw.ApplicationWindow):
                 self.sidebar_list.select_row(row)
                 return
 
-    def _build_page(self, name: str) -> Optional[Adw.NavigationPage]:
+    def _build_page(self, name: str) -> Adw.NavigationPage | None:
         if name == "home":
             return HomePage(self.app, self)
         if name == "library":

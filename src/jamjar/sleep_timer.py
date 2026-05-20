@@ -11,7 +11,6 @@ original volume is restored so the next play session isn't silent.
 from __future__ import annotations
 
 import logging
-from typing import Optional
 
 from gi.repository import GLib, GObject
 
@@ -33,8 +32,8 @@ class SleepTimer(GObject.Object):
         super().__init__()
         self.player = None
         self._expiry: float = 0.0  # monotonic seconds
-        self._tick_source: Optional[int] = None
-        self._fade_source: Optional[int] = None
+        self._tick_source: int | None = None
+        self._fade_source: int | None = None
         self._fade_step = 0
         self._fade_steps = 1
         self._fade_start_volume = 1.0

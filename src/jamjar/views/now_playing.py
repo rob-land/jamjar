@@ -3,15 +3,21 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from gi.repository import Adw, Gdk, GLib, GObject, Gtk
 
 from ..lyrics import Lyrics, active_index, fetch_lyrics
 from ..queue import RepeatMode
-from ._common import (apply_favorite_visual, commit_favorite, format_duration,
-                       load_remote_image_async, make_link_label,
-                       open_album_by_id, open_artist_by_id)
+from ._common import (
+    apply_favorite_visual,
+    commit_favorite,
+    format_duration,
+    load_remote_image_async,
+    make_link_label,
+    open_album_by_id,
+    open_artist_by_id,
+)
 
 if TYPE_CHECKING:
     from ..application import JamjarApplication
@@ -59,9 +65,9 @@ class NowPlayingBar(Gtk.Box):
 
     def __init__(self) -> None:
         super().__init__()
-        self.player: Optional["Player"] = None
-        self.queue: Optional["PlayQueue"] = None
-        self.client: Optional["JellyfinClient"] = None
+        self.player: Player | None = None
+        self.queue: PlayQueue | None = None
+        self.client: JellyfinClient | None = None
         self._suppress_seek = False
         self._suppress_favorite = False
         self._duration = 0.0
@@ -329,17 +335,17 @@ class NowPlayingPage(Adw.NavigationPage):
     np_shuffle  = Gtk.Template.Child()
     np_repeat   = Gtk.Template.Child()
 
-    def __init__(self, app: "JamjarApplication", window: "JamjarWindow") -> None:
+    def __init__(self, app: JamjarApplication, window: JamjarWindow) -> None:
         super().__init__()
         self.app = app
         self.window = window
         self._suppress_seek = False
         self._suppress_favorite = False
         self._duration = 0.0
-        self._lyrics: Optional[Lyrics] = None
+        self._lyrics: Lyrics | None = None
         self._lyric_labels: list[Gtk.Label] = []
         self._lyrics_seq = 0
-        self._active_lyric_index: Optional[int] = None
+        self._active_lyric_index: int | None = None
         self._render_lyrics_placeholder("No track playing")
         self.sidebar_toggle.connect("clicked", lambda *_: window.toggle_sidebar())
 
@@ -494,7 +500,7 @@ class NowPlayingPage(Adw.NavigationPage):
 
         self.app.runner.submit(runme()).add_done_callback(done)
 
-    def _render_lyrics(self, seq: int, lyrics: Optional[Lyrics]) -> None:
+    def _render_lyrics(self, seq: int, lyrics: Lyrics | None) -> None:
         # Drop stale callbacks: a faster, later track-change must not be
         # overwritten by a slower, earlier fetch.
         if seq != self._lyrics_seq:

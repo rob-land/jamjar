@@ -23,7 +23,6 @@ import hashlib
 import logging
 import threading
 from pathlib import Path
-from typing import Optional
 
 from gi.repository import GLib
 
@@ -31,7 +30,7 @@ log = logging.getLogger(__name__)
 
 MAX_CACHE_BYTES = 200 * 1024 * 1024  # 200 MB
 
-_dir: Optional[Path] = None
+_dir: Path | None = None
 
 
 def _ensure_dir() -> Path:
@@ -47,7 +46,7 @@ def _key(url: str) -> str:
     return hashlib.sha256(url.encode("utf-8")).hexdigest()
 
 
-def get(url: str) -> Optional[bytes]:
+def get(url: str) -> bytes | None:
     """Return the cached bytes for `url`, or None on miss / I/O failure.
 
     Touches the file's mtime so frequently-used art stays warm under the

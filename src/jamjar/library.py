@@ -3,12 +3,12 @@
 from __future__ import annotations
 
 import logging
-from typing import Awaitable, Callable, Optional
+from collections.abc import Awaitable, Callable
 
-from gi.repository import GLib, GObject, Gio
+from gi.repository import Gio, GLib, GObject
 
 from .client import AsyncRunner, JellyfinClient
-from .models import Album, Artist, Playlist, Track
+from .models import Album, Track
 
 log = logging.getLogger(__name__)
 
@@ -68,7 +68,7 @@ class WindowedListModel(GObject.Object, Gio.ListModel):
 
     def __init__(self, runner: AsyncRunner,
                  fetcher: Callable[..., Awaitable[list]],
-                 on_error: Optional[Callable[[str], None]] = None) -> None:
+                 on_error: Callable[[str], None] | None = None) -> None:
         super().__init__()
         self._runner = runner
         self._fetcher = fetcher
@@ -202,7 +202,7 @@ class Library(GObject.Object):
     __gtype_name__ = "JamjarLibrary"
 
     def __init__(self, client: JellyfinClient, runner: AsyncRunner,
-                 on_error: Optional[Callable[[str], None]] = None) -> None:
+                 on_error: Callable[[str], None] | None = None) -> None:
         super().__init__()
         self.client = client
         self.runner = runner

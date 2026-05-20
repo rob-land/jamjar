@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-from typing import Optional
 
 from gi.repository import GLib, GObject, Gst
 
@@ -77,7 +76,7 @@ class Player(GObject.Object):
     def volume(self) -> float:
         return float(self.pipeline.get_property("volume"))
 
-    def play(self, track: Optional[Track] = None) -> None:
+    def play(self, track: Track | None = None) -> None:
         if track is None:
             track = self.queue.current
         if track is None:

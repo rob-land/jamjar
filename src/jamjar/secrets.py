@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-from typing import Optional
 
 from gi.repository import GLib, Secret
 
@@ -30,7 +29,7 @@ def store_token(server_id: str, user_id: str, token: str) -> None:
     )
 
 
-def lookup_token(server_id: str, user_id: str) -> Optional[str]:
+def lookup_token(server_id: str, user_id: str) -> str | None:
     attrs = {"server_id": server_id, "user_id": user_id}
     try:
         return Secret.password_lookup_sync(SCHEMA, attrs, None)

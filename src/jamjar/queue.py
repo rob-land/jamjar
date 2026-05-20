@@ -5,7 +5,6 @@ from __future__ import annotations
 import logging
 import random
 from enum import IntEnum
-from typing import Optional
 
 from gi.repository import GObject
 
@@ -62,7 +61,7 @@ class PlayQueue(GObject.Object):
         self._repeat = RepeatMode(value)
 
     @property
-    def current(self) -> Optional[Track]:
+    def current(self) -> Track | None:
         if 0 <= self._index < len(self._tracks):
             return self._tracks[self._index]
         return None
@@ -140,7 +139,7 @@ class PlayQueue(GObject.Object):
         self.emit("queue-changed")
         self.emit("current-changed", None)
 
-    def jump_to(self, index: int) -> Optional[Track]:
+    def jump_to(self, index: int) -> Track | None:
         if not (0 <= index < len(self._tracks)):
             return None
         self._index = index
@@ -149,11 +148,11 @@ class PlayQueue(GObject.Object):
 
     # ------- navigation -------
 
-    def peek_next(self) -> Optional[Track]:
+    def peek_next(self) -> Track | None:
         nxt = self._next_index(advance=False)
         return self._tracks[nxt] if nxt is not None else None
 
-    def advance(self) -> Optional[Track]:
+    def advance(self) -> Track | None:
         nxt = self._next_index(advance=True)
         if nxt is None:
             self._index = -1
@@ -162,7 +161,7 @@ class PlayQueue(GObject.Object):
         self.emit("current-changed", self.current)
         return self.current
 
-    def previous(self) -> Optional[Track]:
+    def previous(self) -> Track | None:
         if self._repeat is RepeatMode.ONE and self._index >= 0:
             self.emit("current-changed", self.current)
             return self.current
@@ -176,7 +175,7 @@ class PlayQueue(GObject.Object):
         self.emit("current-changed", self.current)
         return self.current
 
-    def _next_index(self, advance: bool) -> Optional[int]:
+    def _next_index(self, advance: bool) -> int | None:
         if not self._tracks:
             return None
         if self._repeat is RepeatMode.ONE and self._index >= 0:

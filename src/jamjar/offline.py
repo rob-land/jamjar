@@ -3,14 +3,11 @@ indexes them in SQLite for LRU eviction."""
 
 from __future__ import annotations
 
-import asyncio
 import logging
 import os
 import sqlite3
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Iterable
-
-import aiohttp
 
 from gi.repository import GLib
 

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from gi.repository import Adw, Gdk, GLib, GObject, Gtk
 
@@ -48,10 +48,10 @@ class LoginDialog(Adw.Dialog):
     password_signin      = Gtk.Template.Child()
     password_error       = Gtk.Template.Child()
 
-    def __init__(self, app: "JamjarApplication") -> None:
+    def __init__(self, app: JamjarApplication) -> None:
         super().__init__()
         self.app = app
-        self._selected_server: Optional[Server] = None
+        self._selected_server: Server | None = None
         self._quick_cancelled = False
 
         self.rescan_row.connect("activated", lambda *_: self._scan())
@@ -212,7 +212,11 @@ class LoginDialog(Adw.Dialog):
             try:
                 result = future.result()
             except AuthError as e:
-                GLib.idle_add(lambda: (self._show_error(str(e)), False)[1])
+                # `e` is scoped to the except block, so we have to
+                # capture its message before the GLib.idle_add lambda
+                # runs on the GTK loop.
+                msg = str(e)
+                GLib.idle_add(lambda: (self._show_error(msg), False)[1])
                 return
             except Exception as e:
                 log.warning("password login failed: %s", e)

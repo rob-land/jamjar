@@ -6,7 +6,7 @@ import asyncio
 import logging
 import socket
 import uuid
-from typing import Awaitable, Callable, Optional
+from collections.abc import Callable
 
 import aiohttp
 
@@ -40,7 +40,7 @@ def auth_header(device_id: str, token: str = "") -> dict[str, str]:
     that strip non-standard `Authorization` schemes.
     """
     parts = [
-        f'Client="Jamjar"',
+        'Client="Jamjar"',
         f'Device="{device_name()}"',
         f'DeviceId="{device_id}"',
         f'Version="{__version__}"',
@@ -61,13 +61,13 @@ class Authenticator:
     """Lightweight authenticator that doesn't depend on the full client."""
 
     def __init__(self, base_url: str, device_id: str,
-                 session: Optional[aiohttp.ClientSession] = None):
+                 session: aiohttp.ClientSession | None = None):
         self.base = base_url.rstrip("/")
         self.device_id = device_id
         self._session = session
         self._owns_session = session is None
 
-    async def __aenter__(self) -> "Authenticator":
+    async def __aenter__(self) -> Authenticator:
         if self._session is None:
             self._session = aiohttp.ClientSession()
         return self
@@ -104,7 +104,7 @@ class Authenticator:
     async def quick_connect(
         self,
         on_code: Callable[[str], None],
-        cancelled: Optional[Callable[[], bool]] = None,
+        cancelled: Callable[[], bool] | None = None,
         poll_interval: float = 3.0,
     ) -> AuthResult:
         headers = auth_header(self.device_id, "")

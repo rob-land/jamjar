@@ -13,7 +13,8 @@ over the widget's lifetime. For static rows pass `lambda t=track: t`.
 from __future__ import annotations
 
 import logging
-from typing import Callable, Optional, TYPE_CHECKING
+from collections.abc import Callable
+from typing import TYPE_CHECKING
 
 from gi.repository import Gdk, Gio, GLib, Gtk
 
@@ -28,9 +29,9 @@ log = logging.getLogger(__name__)
 
 
 def install_track_menu(widget: Gtk.Widget,
-                       get_track: Callable[[], Optional["Track"]],
-                       app: "JamjarApplication",
-                       window: "JamjarWindow") -> None:
+                       get_track: Callable[[], Track | None],
+                       app: JamjarApplication,
+                       window: JamjarWindow) -> None:
     def show(x: float, y: float) -> None:
         track = get_track()
         if track is None:
@@ -47,8 +48,8 @@ def install_track_menu(widget: Gtk.Widget,
     widget.add_controller(lp)
 
 
-def show_track_popover(track: "Track", app: "JamjarApplication",
-                       window: "JamjarWindow", parent: Gtk.Widget,
+def show_track_popover(track: Track, app: JamjarApplication,
+                       window: JamjarWindow, parent: Gtk.Widget,
                        x: float, y: float) -> None:
     """Pop up the track context menu at (x, y) relative to `parent`.
 

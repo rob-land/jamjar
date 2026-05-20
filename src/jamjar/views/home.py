@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 
 from gi.repository import Adw, GLib, Gtk
 
-from ._common import fallback_icon, format_duration, load_remote_image_async
+from ._common import load_remote_image_async
 from .album_menu import install_album_menu
 from .track_menu import install_track_menu
 
@@ -27,7 +27,7 @@ class HomePage(Adw.NavigationPage):
     recently_added_row  = Gtk.Template.Child()
     suggested_row       = Gtk.Template.Child()
 
-    def __init__(self, app: "JamjarApplication", window: "JamjarWindow") -> None:
+    def __init__(self, app: JamjarApplication, window: JamjarWindow) -> None:
         super().__init__()
         self.app = app
         self.window = window

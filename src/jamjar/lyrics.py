@@ -5,11 +5,9 @@ from __future__ import annotations
 import logging
 import re
 from dataclasses import dataclass
-from typing import Optional
 
 import aiohttp
 
-from .auth import auth_header
 from .client import JellyfinClient
 from .models import Track
 
@@ -20,7 +18,7 @@ LRC_LINE_RE = re.compile(r"\[(\d+):(\d+(?:\.\d+)?)\](.*)")
 
 @dataclass(frozen=True)
 class LyricLine:
-    seconds: Optional[float]   # None = unsynced
+    seconds: float | None   # None = unsynced
     text: str
 
 
@@ -64,7 +62,7 @@ def parse_jellyfin_lyrics(payload) -> Lyrics:
     return Lyrics(lines=(), synced=False)
 
 
-async def fetch_lyrics(client: JellyfinClient, track: Track) -> Optional[Lyrics]:
+async def fetch_lyrics(client: JellyfinClient, track: Track) -> Lyrics | None:
     url = client.lyrics_url(track)
     try:
         async with client.session.get(url, headers=client.headers) as r:
@@ -82,7 +80,7 @@ async def fetch_lyrics(client: JellyfinClient, track: Track) -> Optional[Lyrics]
     return parse_jellyfin_lyrics(payload)
 
 
-def active_index(lyrics: Lyrics, position_seconds: float) -> Optional[int]:
+def active_index(lyrics: Lyrics, position_seconds: float) -> int | None:
     if not lyrics.synced or not lyrics.lines:
         return None
     last = -1

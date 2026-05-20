@@ -26,7 +26,7 @@ class QueuePage(Adw.NavigationPage):
     empty_state    = Gtk.Template.Child()
     queue_menu_button = Gtk.Template.Child()
 
-    def __init__(self, app: "JamjarApplication", window: "JamjarWindow") -> None:
+    def __init__(self, app: JamjarApplication, window: JamjarWindow) -> None:
         super().__init__()
         self.app = app
         self.window = window

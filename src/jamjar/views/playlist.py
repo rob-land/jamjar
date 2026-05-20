@@ -24,7 +24,7 @@ class PlaylistPage(Adw.NavigationPage):
     playlist_meta_label   = Gtk.Template.Child()
     playlist_tracks       = Gtk.Template.Child()
 
-    def __init__(self, app: "JamjarApplication", window: "JamjarWindow", playlist) -> None:
+    def __init__(self, app: JamjarApplication, window: JamjarWindow, playlist) -> None:
         super().__init__()
         self.app = app
         self.window = window

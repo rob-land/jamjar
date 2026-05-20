@@ -10,7 +10,8 @@ per-album track list after first fetch.
 from __future__ import annotations
 
 import logging
-from typing import Callable, Optional, TYPE_CHECKING
+from collections.abc import Callable
+from typing import TYPE_CHECKING
 
 from gi.repository import Gdk, Gio, GLib, Gtk
 
@@ -25,9 +26,9 @@ log = logging.getLogger(__name__)
 
 
 def install_album_menu(widget: Gtk.Widget,
-                       get_album: Callable[[], Optional["Album"]],
-                       app: "JamjarApplication",
-                       window: "JamjarWindow") -> None:
+                       get_album: Callable[[], Album | None],
+                       app: JamjarApplication,
+                       window: JamjarWindow) -> None:
     def show(x: float, y: float) -> None:
         album = get_album()
         if album is None:

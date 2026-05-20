@@ -1,10 +1,14 @@
 """MPRIS2 D-Bus service so media keys, GNOME Shell quick settings, and
 Phosh lock-screen controls all "just work"."""
 
+# ruff: noqa: F821, UP037 — dbus-next uses single-letter D-Bus signature
+# strings ("b", "s", "x", "d", "o", "a{sv}", …) as method/property
+# annotations. They look like undefined names to a Python linter; keep
+# them quoted for clarity even though the file uses PEP 563.
+
 from __future__ import annotations
 
 import logging
-from typing import Optional
 
 from .client import AsyncRunner
 from .player import Player
@@ -56,8 +60,8 @@ class MprisService:
 
     async def _setup(self) -> None:
         from dbus_next.aio import MessageBus
-        from dbus_next.service import ServiceInterface, method, dbus_property
         from dbus_next.constants import BusType, PropertyAccess
+        from dbus_next.service import ServiceInterface, dbus_property, method
         from dbus_next.signature import Variant
 
         player = self.player

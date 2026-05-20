@@ -4,9 +4,7 @@ from __future__ import annotations
 
 import logging
 import time
-import uuid
 from gettext import gettext as _
-from typing import Optional
 
 from gi.repository import Adw, Gio, GLib, GObject, Gtk
 
@@ -16,9 +14,9 @@ from .client import AsyncRunner, JellyfinClient
 from .library import Library
 from .mpris import MprisService
 from .player import Player
-from .queue import PlayQueue, RepeatMode
+from .queue import PlayQueue
 from .scrobble import Scrobbler
-from .secrets import lookup_token, clear_token
+from .secrets import clear_token, lookup_token
 from .sleep_timer import SleepTimer
 
 log = logging.getLogger(__name__)
@@ -49,12 +47,12 @@ class JamjarApplication(Adw.Application):
         if not self.settings.get_string("device-id"):
             self.settings.set_string("device-id", new_device_id())
 
-        self.client: Optional[JellyfinClient] = None
-        self.library: Optional[Library] = None
-        self.queue: Optional[PlayQueue] = None
-        self.player: Optional[Player] = None
-        self.scrobbler: Optional[Scrobbler] = None
-        self.mpris: Optional[MprisService] = None
+        self.client: JellyfinClient | None = None
+        self.library: Library | None = None
+        self.queue: PlayQueue | None = None
+        self.player: Player | None = None
+        self.scrobbler: Scrobbler | None = None
+        self.mpris: MprisService | None = None
         self.sleep_timer = SleepTimer()
         self._holding = False
         # Per-message dedup so a wave of related failures (e.g. losing

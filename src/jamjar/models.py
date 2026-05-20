@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Optional
 
 
 @dataclass(frozen=True)
@@ -32,10 +31,10 @@ class Track:
     artists: tuple[str, ...]
     artist_ids: tuple[str, ...]
     duration_ticks: int           # 1 tick = 100 ns
-    index_number: Optional[int] = None
-    parent_index_number: Optional[int] = None
-    image_tag: Optional[str] = None
-    album_image_tag: Optional[str] = None
+    index_number: int | None = None
+    parent_index_number: int | None = None
+    image_tag: str | None = None
+    album_image_tag: str | None = None
     user_data: dict = field(default_factory=dict)
 
     @property
@@ -53,9 +52,9 @@ class Album:
     name: str
     artists: tuple[str, ...]
     artist_ids: tuple[str, ...]
-    year: Optional[int] = None
-    track_count: Optional[int] = None
-    image_tag: Optional[str] = None
+    year: int | None = None
+    track_count: int | None = None
+    image_tag: str | None = None
     user_data: dict = field(default_factory=dict)
 
     @property
@@ -67,8 +66,8 @@ class Album:
 class Artist:
     id: str
     name: str
-    album_count: Optional[int] = None
-    image_tag: Optional[str] = None
+    album_count: int | None = None
+    image_tag: str | None = None
     user_data: dict = field(default_factory=dict)
 
 
@@ -76,8 +75,8 @@ class Artist:
 class Playlist:
     id: str
     name: str
-    track_count: Optional[int] = None
-    image_tag: Optional[str] = None
+    track_count: int | None = None
+    image_tag: str | None = None
 
 
 @dataclass(frozen=True)
@@ -86,7 +85,7 @@ class SearchHit:
     type: str        # "Audio" | "MusicAlbum" | "MusicArtist"
     name: str
     secondary: str = ""
-    image_tag: Optional[str] = None
+    image_tag: str | None = None
 
 
 def track_from_json(item: dict) -> Track:

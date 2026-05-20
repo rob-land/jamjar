@@ -6,8 +6,9 @@ import asyncio
 import logging
 import threading
 import urllib.parse
+from collections.abc import Callable
 from concurrent.futures import Future
-from typing import Any, Callable, Optional
+from typing import Any
 
 import aiohttp
 
@@ -84,8 +85,8 @@ class JellyfinClient:
     """Async REST wrapper around a single Jellyfin user session."""
 
     def __init__(self, base_url: str, user_id: str, token: str, device_id: str,
-                 session: Optional[aiohttp.ClientSession] = None,
-                 on_unauthorized: Optional[Callable[[], None]] = None) -> None:
+                 session: aiohttp.ClientSession | None = None,
+                 on_unauthorized: Callable[[], None] | None = None) -> None:
         self.base = base_url.rstrip("/")
         self.user_id = user_id
         self.token = token
@@ -98,7 +99,7 @@ class JellyfinClient:
         # all 401ing), so the handler must be idempotent.
         self.on_unauthorized = on_unauthorized
 
-    async def __aenter__(self) -> "JellyfinClient":
+    async def __aenter__(self) -> JellyfinClient:
         if self._session is None:
             self._session = aiohttp.ClientSession()
         return self
@@ -133,7 +134,7 @@ class JellyfinClient:
                 log.exception("on_unauthorized handler raised")
         raise Unauthorized(f"401 Unauthorized for {r.url}")
 
-    async def _get_json(self, path: str, params: Optional[dict] = None) -> Any:
+    async def _get_json(self, path: str, params: dict | None = None) -> Any:
         async with self.session.get(
             f"{self.base}{path}", params=params, headers=self.headers
         ) as r:
@@ -141,8 +142,8 @@ class JellyfinClient:
             r.raise_for_status()
             return await r.json()
 
-    async def _post_json(self, path: str, body: Optional[dict] = None,
-                         params: Optional[dict] = None) -> Any:
+    async def _post_json(self, path: str, body: dict | None = None,
+                         params: dict | None = None) -> Any:
         async with self.session.post(
             f"{self.base}{path}", json=body, params=params, headers=self.headers
         ) as r:
@@ -211,8 +212,8 @@ class JellyfinClient:
     async def list_albums(self, start: int = 0, limit: int = 100,
                           sort_by: str = "SortName",
                           sort_order: str = "Ascending",
-                          name_starts_with: Optional[str] = None,
-                          name_less_than: Optional[str] = None) -> list[Album]:
+                          name_starts_with: str | None = None,
+                          name_less_than: str | None = None) -> list[Album]:
         params: dict[str, Any] = {
             "userId":                 self.user_id,
             "IncludeItemTypes":       "MusicAlbum",
@@ -232,8 +233,8 @@ class JellyfinClient:
         return [album_from_json(item) for item in data.get("Items", [])]
 
     async def list_artists(self, start: int = 0, limit: int = 100,
-                           name_starts_with: Optional[str] = None,
-                           name_less_than: Optional[str] = None) -> list[Artist]:
+                           name_starts_with: str | None = None,
+                           name_less_than: str | None = None) -> list[Artist]:
         # /Artists/AlbumArtists rather than /Artists: returns only artists
         # who appear as the album artist of at least one album, suppressing
         # the long tail of single-track guest features that clutter
@@ -268,8 +269,8 @@ class JellyfinClient:
 
     async def list_songs(self, start: int = 0, limit: int = 200,
                          sort_by: str = "SortName",
-                         name_starts_with: Optional[str] = None,
-                         name_less_than: Optional[str] = None) -> list[Track]:
+                         name_starts_with: str | None = None,
+                         name_less_than: str | None = None) -> list[Track]:
         # MediaSources is intentionally omitted here: the songs list only needs
         # display fields. MediaSources is fetched on demand at play time
         # via get_item(), and is the heaviest field Jellyfin can return.
@@ -369,7 +370,7 @@ class JellyfinClient:
         query = urllib.parse.urlencode(params)
         return f"{self.base}/Audio/{track.id}/universal?{query}"
 
-    def cover_url(self, item_id: str, tag: Optional[str] = None,
+    def cover_url(self, item_id: str, tag: str | None = None,
                   max_width: int = 512) -> str:
         params: dict[str, str] = {"maxWidth": str(max_width)}
         if tag:

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-from typing import Optional
 
 from gi.repository import GLib, GObject
 
@@ -34,10 +33,10 @@ class Scrobbler(GObject.Object):
         self.queue = queue
         self.runner = runner
 
-        self._current: Optional[Track] = None
+        self._current: Track | None = None
         self._position_seconds: float = 0.0
         self._is_paused: bool = False
-        self._progress_source: Optional[int] = None
+        self._progress_source: int | None = None
 
         player.connect("track-changed",    self._on_track_changed)
         player.connect("state-changed",    self._on_state_changed)
@@ -45,7 +44,7 @@ class Scrobbler(GObject.Object):
 
     # ------- handlers -------
 
-    def _on_track_changed(self, _player, track: Optional[Track]) -> None:
+    def _on_track_changed(self, _player, track: Track | None) -> None:
         if self._current and self._current.id != (track.id if track else None):
             self._send_stopped()
         self._current = track

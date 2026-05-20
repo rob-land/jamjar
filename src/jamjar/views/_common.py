@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 import logging
-from typing import Callable, Optional
+from collections.abc import Callable
 
-from gi.repository import Adw, Gdk, GdkPixbuf, GLib, Gio, Gtk
+from gi.repository import Gdk, GdkPixbuf, GLib, Gtk
 
 from .. import imagecache
 from ..models import album_from_json, artist_from_json
@@ -22,7 +22,7 @@ def format_duration(seconds: float) -> str:
     return f"{m:d}:{s:02d}"
 
 
-def escape_markup(text: Optional[str]) -> str:
+def escape_markup(text: str | None) -> str:
     # Adw.ActionRow / Adw.PreferencesRow render title and subtitle as Pango
     # markup, so any server-supplied string with `&`, `<`, or `>` must be
     # escaped before going in.
@@ -243,7 +243,7 @@ def open_album_by_id(window, app, album_id: str) -> None:
     app.runner.submit(fetch()).add_done_callback(done)
 
 
-def make_link_label(label: Gtk.Label, target: Optional[Callable[[], None]]) -> None:
+def make_link_label(label: Gtk.Label, target: Callable[[], None] | None) -> None:
     """Wire `label` as a clickable link.
 
     `target` is invoked on click. Pass `None` to remove the link affordance

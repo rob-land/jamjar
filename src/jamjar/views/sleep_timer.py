@@ -18,7 +18,7 @@ PRESET_MINUTES = (15, 30, 45, 60)
 class SleepTimerDialog(Adw.AlertDialog):
     __gtype_name__ = "JamjarSleepTimerDialog"
 
-    def __init__(self, app: "JamjarApplication") -> None:
+    def __init__(self, app: JamjarApplication) -> None:
         super().__init__()
         self.app = app
         self.set_heading("Sleep Timer")
