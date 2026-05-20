@@ -348,15 +348,24 @@ class JamjarApplication(Adw.Application):
 
     # ------- token restore -------
 
-    def try_restore_session(self) -> bool:
+    def try_restore_session(self, on_done) -> None:
+        """Attempt to restore a saved session in the background.
+
+        Calls `on_done(True)` after `attach_session` has run on the
+        GTK thread, or `on_done(False)` if no saved credentials or the
+        restore failed. Always invokes `on_done` on the main thread so
+        callers can present the login dialog from the failure branch.
+        """
         sid = self.settings.get_string("last-server-id")
         uid = self.settings.get_string("last-user-id")
         addr = self.settings.get_string("last-server-address")
         if not (sid and uid and addr):
-            return False
+            on_done(False)
+            return
         token = lookup_token(sid, uid)
         if not token:
-            return False
+            on_done(False)
+            return
         device_id = self.settings.get_string("device-id")
 
         async def build():
@@ -364,10 +373,18 @@ class JamjarApplication(Adw.Application):
             await client.__aenter__()
             return client
 
-        try:
-            client = self.runner.submit(build()).result(timeout=4.0)
-        except Exception as e:
-            log.warning("session restore failed: %s", e)
-            return False
-        self.attach_session(client)
-        return True
+        def _done(future):
+            try:
+                client = future.result()
+            except Exception as e:
+                log.warning("session restore failed: %s", e)
+                GLib.idle_add(on_done, False)
+                return
+
+            def _attach_and_signal():
+                self.attach_session(client)
+                on_done(True)
+                return False
+            GLib.idle_add(_attach_and_signal)
+
+        self.runner.submit(build()).add_done_callback(_done)

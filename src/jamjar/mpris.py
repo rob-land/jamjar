@@ -35,11 +35,19 @@ class MprisService:
         self._player_iface = None
         self._available = False
 
-        try:
-            self.runner.submit(self._setup()).result(timeout=4.0)
-            self._available = True
-        except Exception as e:
-            log.warning("MPRIS service unavailable: %s", e)
+        # MPRIS setup talks to the session bus; blocking the GTK
+        # thread for it would freeze the window on attach. Fire it
+        # async and let _available stay False until the future
+        # finishes — signal handlers below check it.
+        fut = self.runner.submit(self._setup())
+
+        def _done(f):
+            try:
+                f.result()
+                self._available = True
+            except Exception as e:
+                log.warning("MPRIS service unavailable: %s", e)
+        fut.add_done_callback(_done)
 
         # Wire up player signals to MPRIS property changes
         player.connect("track-changed",    self._on_track)

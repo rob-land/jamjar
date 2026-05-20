@@ -87,10 +87,12 @@ class JamjarWindow(Adw.ApplicationWindow):
             self.set_help_overlay(overlay)
 
     def _post_present(self) -> bool:
-        if not self.app.try_restore_session():
-            self.show_login()
-        else:
-            self._on_session_attached()
+        def _after(restored: bool):
+            if restored:
+                self._on_session_attached()
+            else:
+                self.show_login()
+        self.app.try_restore_session(_after)
         return False
 
     def _on_session_attached(self) -> None:
