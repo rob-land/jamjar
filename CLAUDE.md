@@ -91,7 +91,7 @@ jamjar/
 │       ├── now-playing-page.blp
 │       ├── queue-pane.blp
 │       ├── prefs.blp
-│       └── help-overlay.blp         # Gtk.ShortcutsWindow
+│       └── help-overlay.blp         # Adw.ShortcutsDialog
 ├── po/
 └── src/jamjar/
     ├── __init__.py

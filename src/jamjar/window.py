@@ -51,7 +51,8 @@ class JamjarWindow(Adw.ApplicationWindow):
         self.app: JamjarApplication = self.get_application()  # type: ignore[assignment]
         self._pages: dict[str, Adw.NavigationPage] = {}
         self._current_top_level: str = "home"
-        self._install_help_overlay()
+        self._shortcuts_dialog: Adw.ShortcutsDialog | None = None
+        self._install_shortcuts_dialog()
         self._build_sidebar()
 
         self.connect("close-request", self._on_close_request)
@@ -80,14 +81,17 @@ class JamjarWindow(Adw.ApplicationWindow):
 
     # ------- bootstrap -------
 
-    def _install_help_overlay(self) -> None:
-        # The "Keyboard Shortcuts" primary-menu entry uses
-        # `win.show-help-overlay`, which Gtk.ApplicationWindow auto-registers
-        # once a help overlay is set on the window.
+    def _install_shortcuts_dialog(self) -> None:
         builder = Gtk.Builder.new_from_resource("/land/rob/jamjar/help-overlay.ui")
-        overlay = builder.get_object("help_overlay")
-        if overlay is not None:
-            self.set_help_overlay(overlay)
+        self._shortcuts_dialog = builder.get_object("help_overlay")
+
+        action = Gio.SimpleAction.new("show-help-overlay", None)
+        action.connect("activate", self._show_shortcuts_dialog)
+        self.add_action(action)
+
+    def _show_shortcuts_dialog(self, *_args) -> None:
+        if self._shortcuts_dialog is not None:
+            self._shortcuts_dialog.present(self)
 
     def _post_present(self) -> bool:
         def _after(restored: bool):
@@ -248,7 +252,7 @@ class JamjarWindow(Adw.ApplicationWindow):
         # Stop the player so the held GApplication releases and the process
         # actually exits when the window closes. Without this, hold() keeps
         # the app alive headlessly after X is pressed.
-        if self.app.player and self.app.player.is_playing:
+        if self.app.player:
             self.app.player.stop()
         return False
 

@@ -1,53 +1,49 @@
 using Gtk 4.0;
+using Adw 1;
 
-ShortcutsWindow help_overlay {
-  modal: true;
+Adw.ShortcutsDialog help_overlay {
+  title: _("Keyboard Shortcuts");
 
-  ShortcutsSection {
-    section-name: "shortcuts";
-    max-height: 10;
+  Adw.ShortcutsSection {
+    title: C_("shortcut window", "General");
 
-    ShortcutsGroup {
-      title: C_("shortcut window", "General");
-
-      ShortcutsShortcut {
-        title: C_("shortcut window", "Search");
-        action-name: "app.search";
-      }
-
-      ShortcutsShortcut {
-        title: C_("shortcut window", "Preferences");
-        action-name: "app.preferences";
-      }
-
-      ShortcutsShortcut {
-        title: C_("shortcut window", "Show Keyboard Shortcuts");
-        action-name: "win.show-help-overlay";
-      }
-
-      ShortcutsShortcut {
-        title: C_("shortcut window", "Quit");
-        action-name: "app.quit";
-      }
+    Adw.ShortcutsItem {
+      title: C_("shortcut window", "Search");
+      action-name: "app.search";
     }
 
-    ShortcutsGroup {
-      title: C_("shortcut window", "Playback");
+    Adw.ShortcutsItem {
+      title: C_("shortcut window", "Preferences");
+      action-name: "app.preferences";
+    }
 
-      ShortcutsShortcut {
-        title: C_("shortcut window", "Play / Pause");
-        accelerator: "space";
-      }
+    Adw.ShortcutsItem {
+      title: C_("shortcut window", "Show Keyboard Shortcuts");
+      action-name: "win.show-help-overlay";
+    }
 
-      ShortcutsShortcut {
-        title: C_("shortcut window", "Next Track");
-        action-name: "app.next";
-      }
+    Adw.ShortcutsItem {
+      title: C_("shortcut window", "Quit");
+      action-name: "app.quit";
+    }
+  }
 
-      ShortcutsShortcut {
-        title: C_("shortcut window", "Previous Track");
-        action-name: "app.previous";
-      }
+  Adw.ShortcutsSection {
+    title: C_("shortcut window", "Playback");
+
+    Adw.ShortcutsItem {
+      title: C_("shortcut window", "Play / Pause");
+      accelerator: "space";
+    }
+
+    Adw.ShortcutsItem {
+      title: C_("shortcut window", "Next Track");
+      action-name: "app.next";
+    }
+
+    Adw.ShortcutsItem {
+      title: C_("shortcut window", "Previous Track");
+      action-name: "app.previous";
     }
   }
 }

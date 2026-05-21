@@ -10,6 +10,8 @@ from __future__ import annotations
 
 import logging
 
+from gi.repository import GLib
+
 from .client import AsyncRunner
 from .player import Player
 from .queue import PlayQueue, RepeatMode
@@ -69,6 +71,9 @@ class MprisService:
         on_quit = self.on_quit
         on_raise = self.on_raise
 
+        def on_main(callback) -> None:
+            GLib.idle_add(lambda: (callback(), False)[1])
+
         class Root(ServiceInterface):
             def __init__(self):
                 super().__init__("org.mpris.MediaPlayer2")
@@ -117,37 +122,41 @@ class MprisService:
 
             @method()
             def Next(self):  # noqa: N802
-                player.next()
+                on_main(player.next)
 
             @method()
             def Previous(self):  # noqa: N802
-                player.previous()
+                on_main(player.previous)
 
             @method()
             def Pause(self):  # noqa: N802
-                player.pause()
+                on_main(player.pause)
 
             @method()
             def PlayPause(self):  # noqa: N802
-                player.toggle()
+                on_main(player.toggle)
 
             @method()
             def Stop(self):  # noqa: N802
-                player.stop()
+                on_main(player.stop)
 
             @method()
             def Play(self):  # noqa: N802
-                if player.queue.current is None and player.queue.tracks:
-                    player.queue.jump_to(0)
-                player.resume() if not player.is_playing else None
+                def play() -> None:
+                    if player.queue.current is None and player.queue.tracks:
+                        player.queue.jump_to(0)
+                    elif not player.is_playing:
+                        player.toggle()
+
+                on_main(play)
 
             @method()
             def Seek(self, offset: "x"):  # microseconds
-                player.seek(player.position + offset / 1_000_000)
+                on_main(lambda: player.seek(player.position + offset / 1_000_000))
 
             @method()
             def SetPosition(self, _track_id: "o", position: "x"):
-                player.seek(position / 1_000_000)
+                on_main(lambda: player.seek(position / 1_000_000))
 
             @dbus_property(access=PropertyAccess.READ)
             def PlaybackStatus(self) -> "s":

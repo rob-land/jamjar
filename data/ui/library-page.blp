@@ -15,7 +15,7 @@ template $JamjarLibraryPage: Adw.NavigationPage {
       }
 
       title-widget: Adw.ViewSwitcher switcher {
-        policy: wide;
+        policy: narrow;
         stack: stack;
       };
 
@@ -116,9 +116,8 @@ template $JamjarLibraryPage: Adw.NavigationPage {
             child: ScrolledWindow {
               hscrollbar-policy: never;
 
-              child: ColumnView songs_column {
-                show-row-separators: true;
-                show-column-separators: false;
+              child: ListView songs_list {
+                single-click-activate: true;
               };
             };
           }

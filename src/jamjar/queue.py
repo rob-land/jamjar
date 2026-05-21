@@ -152,13 +152,14 @@ class PlayQueue(GObject.Object):
         nxt = self._next_index(advance=False)
         return self._tracks[nxt] if nxt is not None else None
 
-    def advance(self) -> Track | None:
+    def advance(self, *, emit_current_changed: bool = True) -> Track | None:
         nxt = self._next_index(advance=True)
         if nxt is None:
             self._index = -1
         else:
             self._index = nxt
-        self.emit("current-changed", self.current)
+        if emit_current_changed:
+            self.emit("current-changed", self.current)
         return self.current
 
     def previous(self) -> Track | None:

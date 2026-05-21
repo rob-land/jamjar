@@ -46,11 +46,11 @@ class Player(GObject.Object):
         self.pipeline.set_property("flags", GST_PLAY_FLAG_AUDIO | GST_PLAY_FLAG_SOFT_VOLUME)
         self.pipeline.set_property("volume", 1.0)
 
-        bus = self.pipeline.get_bus()
-        bus.add_signal_watch()
-        bus.connect("message::eos",          self._on_eos)
-        bus.connect("message::error",        self._on_error)
-        bus.connect("message::state-changed", self._on_state)
+        self._bus = self.pipeline.get_bus()
+        self._bus.add_signal_watch()
+        self._bus.connect("message::eos",          self._on_eos)
+        self._bus.connect("message::error",        self._on_error)
+        self._bus.connect("message::state-changed", self._on_state)
         # about-to-finish is a signal on playbin, not a bus message
         self.pipeline.connect("about-to-finish", self._on_about_to_finish)
 
@@ -59,7 +59,9 @@ class Player(GObject.Object):
         self._codec = "copy"
         self._max_bitrate = 0
         self._duration_emitted: float = 0.0
-        GLib.timeout_add(500, self._tick)
+        self._state = Gst.State.NULL
+        self._gapless_next: Track | None = None
+        self._tick_source = GLib.timeout_add(500, self._tick)
 
     # ------- public API -------
 
@@ -86,6 +88,7 @@ class Player(GObject.Object):
             track, codec=self._codec, max_bitrate=self._max_bitrate
         )
         log.debug("playing %s -> %s", track.id, url)
+        self._gapless_next = None
         self.pipeline.set_state(Gst.State.NULL)
         self.pipeline.set_property("uri", url)
         self.pipeline.set_state(Gst.State.PLAYING)
@@ -98,20 +101,28 @@ class Player(GObject.Object):
         self.pipeline.set_state(Gst.State.PLAYING)
 
     def toggle(self) -> None:
-        ok, state, _ = self.pipeline.get_state(Gst.CLOCK_TIME_NONE)
-        if state == Gst.State.PLAYING:
+        if self._state == Gst.State.PLAYING:
             self.pause()
-        elif state in (Gst.State.PAUSED, Gst.State.READY, Gst.State.NULL):
+        elif self._state in (Gst.State.PAUSED, Gst.State.READY, Gst.State.NULL):
             if self.queue.current is None:
                 return
-            if state == Gst.State.NULL:
+            if self._state == Gst.State.NULL:
                 self.play(self.queue.current)
             else:
                 self.resume()
 
     def stop(self) -> None:
+        self._gapless_next = None
         self.pipeline.set_state(Gst.State.NULL)
         self.emit("state-changed", "stopped")
+
+    def close(self) -> None:
+        """Release GStreamer and GLib resources owned by this player."""
+        if self._tick_source is not None:
+            GLib.source_remove(self._tick_source)
+            self._tick_source = None
+        self.stop()
+        self._bus.remove_signal_watch()
 
     def next(self) -> None:
         if self.queue.advance() is None:
@@ -145,8 +156,7 @@ class Player(GObject.Object):
 
     @property
     def is_playing(self) -> bool:
-        ok, state, _ = self.pipeline.get_state(0)
-        return state == Gst.State.PLAYING
+        return self._state == Gst.State.PLAYING
 
     # ------- signal handlers -------
 
@@ -160,6 +170,7 @@ class Player(GObject.Object):
         # Special: this runs on a streaming thread. Setting the URI directly is
         # the documented gapless pattern; the pipeline picks it up at EOS.
         if self.queue.repeat == RepeatMode.ONE and self.queue.current:
+            self._gapless_next = self.queue.current
             url = self.queue.client.stream_url(
                 self.queue.current, codec=self._codec, max_bitrate=self._max_bitrate
             )
@@ -167,6 +178,7 @@ class Player(GObject.Object):
             return
         nxt = self.queue.peek_next()
         if nxt is not None:
+            self._gapless_next = nxt
             url = self.queue.client.stream_url(
                 nxt, codec=self._codec, max_bitrate=self._max_bitrate
             )
@@ -174,11 +186,21 @@ class Player(GObject.Object):
 
     def _on_eos(self, _bus, _msg) -> None:
         # playbin3 fires EOS after about-to-finish even when we set a new URI;
-        # advance the queue index to keep state consistent.
-        new = self.queue.advance()
-        if new is not None:
-            self.emit("track-changed", new)
-        else:
+        # update queue/UI state without recursively restarting the pipeline.
+        gapless_next = self._gapless_next
+        self._gapless_next = None
+        if gapless_next is not None:
+            if self.queue.repeat == RepeatMode.ONE:
+                return
+            new = self.queue.advance(emit_current_changed=False)
+            if new is not None:
+                self.emit("track-changed", new)
+                self.queue.emit("queue-changed")
+            else:
+                self.stop()
+            return
+
+        if self.queue.advance() is None:
             self.stop()
 
     def _on_error(self, _bus, msg) -> None:
@@ -191,6 +213,7 @@ class Player(GObject.Object):
         if msg.src is not self.pipeline:
             return
         old, new, _pending = msg.parse_state_changed()
+        self._state = new
         names = {Gst.State.NULL: "stopped", Gst.State.READY: "ready",
                  Gst.State.PAUSED: "paused", Gst.State.PLAYING: "playing"}
         if new in names:

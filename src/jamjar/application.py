@@ -79,7 +79,7 @@ class JamjarApplication(Adw.Application):
 
     def do_shutdown(self) -> None:  # type: ignore[override]
         if self.player:
-            self.player.stop()
+            self.player.close()
         if self.client:
             self.runner.submit(self.client.close())
         self.runner.stop()
@@ -115,7 +115,7 @@ class JamjarApplication(Adw.Application):
     def detach_session(self) -> None:
         self.sleep_timer.detach()
         if self.player:
-            self.player.stop()
+            self.player.close()
         if self.client:
             self.runner.submit(self.client.close())
         self.client = None
@@ -261,7 +261,7 @@ class JamjarApplication(Adw.Application):
         if state == "playing" and not self._holding:
             self.hold()
             self._holding = True
-        elif state == "stopped" and self._holding:
+        elif state != "playing" and self._holding:
             self._release_hold()
 
     def _release_hold(self) -> None:

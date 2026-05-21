@@ -34,7 +34,7 @@ class LibraryPage(Adw.NavigationPage):
     letter_button   = Gtk.Template.Child()
     albums_grid     = Gtk.Template.Child()
     artists_grid    = Gtk.Template.Child()
-    songs_column    = Gtk.Template.Child()
+    songs_list      = Gtk.Template.Child()
     playlists_list  = Gtk.Template.Child()
     albums_stack    = Gtk.Template.Child()
     artists_stack   = Gtk.Template.Child()
@@ -268,40 +268,37 @@ class LibraryPage(Adw.NavigationPage):
     def _wire_songs(self) -> None:
         store = self.app.library.songs
         selection = Gtk.NoSelection.new(store)
-        self.songs_column.set_model(selection)
+        self.songs_list.set_model(selection)
         self._observe_windowed(store, self.songs_stack)
 
-        for title, attr in (("Title", "name"), ("Artist", "primary_artist"),
-                            ("Album", "album"), ("Duration", "duration_seconds")):
-            factory = Gtk.SignalListItemFactory()
+        factory = Gtk.SignalListItemFactory()
+        factory.connect("setup", self._song_setup)
+        factory.connect("bind", self._song_bind)
+        self.songs_list.set_factory(factory)
+        self.songs_list.connect("activate", self._song_activated)
 
-            def _setup(_f, it):
-                label = Gtk.Label(xalign=0, ellipsize=3, margin_end=8)
-                it.set_child(label)
-                install_track_menu(label,
-                                   lambda it=it: (it.get_item().payload
-                                                   if it.get_item() else None),
-                                   self.app, self.window)
-            factory.connect("setup", _setup)
+    def _song_setup(self, _factory, item) -> None:
+        row = Adw.ActionRow(activatable=True)
+        duration = Gtk.Label(xalign=1)
+        duration.add_css_class("dim-label")
+        duration.add_css_class("numeric")
+        row.add_suffix(duration)
+        item.set_child(row)
+        item.row = row
+        item.duration_label = duration
+        install_track_menu(row,
+                           lambda it=item: (it.get_item().payload
+                                            if it.get_item() else None),
+                           self.app, self.window)
 
-            def _bind(_f, it, attr=attr):
-                track = it.get_item().payload
-                value = getattr(track, attr, "")
-                if attr == "duration_seconds":
-                    value = format_duration(value)
-                it.get_child().set_label(str(value))
-                # Trigger paging from the first column only — bind fires for
-                # every cell of every row, but request_more is idempotent and
-                # checking once per row keeps the math obvious.
-                if attr == "name":
-                    self.app.library.songs.maybe_request_more(it.get_position())
-            factory.connect("bind", _bind)
-
-            column = Gtk.ColumnViewColumn.new(title, factory)
-            column.set_expand(True if attr in ("name", "album") else False)
-            self.songs_column.append_column(column)
-
-        self.songs_column.connect("activate", self._song_activated)
+    def _song_bind(self, _factory, item) -> None:
+        track = item.get_item().payload
+        item.row.set_title(escape_markup(track.name))
+        item.row.set_subtitle(escape_markup(
+            " • ".join(part for part in (track.primary_artist, track.album) if part)
+        ))
+        item.duration_label.set_label(format_duration(track.duration_seconds))
+        self.app.library.songs.maybe_request_more(item.get_position())
 
     def _song_activated(self, view, position) -> None:
         model = view.get_model()

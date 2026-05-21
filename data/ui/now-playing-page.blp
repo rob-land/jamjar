@@ -42,11 +42,11 @@ template $JamjarNowPlayingPage: Adw.NavigationPage {
 
         child: Box {
           orientation: vertical;
-          spacing: 24;
-          margin-start: 24;
-          margin-end: 24;
-          margin-top: 24;
-          margin-bottom: 24;
+          spacing: 18;
+          margin-start: 12;
+          margin-end: 12;
+          margin-top: 18;
+          margin-bottom: 18;
           valign: center;
 
           Box {
@@ -55,14 +55,14 @@ template $JamjarNowPlayingPage: Adw.NavigationPage {
             halign: center;
 
             Adw.Carousel now_playing_carousel {
-              width-request: 320;
-              height-request: 320;
+              width-request: 272;
+              height-request: 272;
               halign: center;
 
               Picture full_cover {
                 content-fit: cover;
-                width-request: 320;
-                height-request: 320;
+                width-request: 272;
+                height-request: 272;
                 halign: center;
 
                 styles ["cover"]
@@ -70,8 +70,8 @@ template $JamjarNowPlayingPage: Adw.NavigationPage {
 
               ScrolledWindow {
                 hscrollbar-policy: never;
-                width-request: 320;
-                height-request: 320;
+                width-request: 272;
+                height-request: 272;
 
                 child: Box lyrics_box {
                   orientation: vertical;
