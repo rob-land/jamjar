@@ -136,11 +136,10 @@ aim outside the row to cancel. The row's tap-to-jump gesture is
 preserved because the drag source is gated on the handle icon, not
 the ActionRow body.
 
-### 8. Add to playlist + playlist editing
-Wire "Add to playlist" (from the new context menu) to a dialog that lists the
-user's playlists and offers "Create new". On the Playlist page, support
-rename, delete, and reorder of tracks (drag, like the queue). Backed by the
-Jellyfin Playlists endpoints. Flagged for v0.2 in `DESIGN.md`.
+### 8. Add to playlist + playlist editing — partial
+Track context menu **Add to Playlist** opens a dialog listing playlists plus
+**Create new playlist** (Jellyfin `POST /Playlists` and `POST …/Items`). Still
+open: playlist page rename/delete and drag-reorder of tracks.
 
 ### 9. Sort / filter on Library pages — partial
 Albums and Songs have a header sort popover (title, year, recently added /

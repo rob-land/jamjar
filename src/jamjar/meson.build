@@ -55,6 +55,7 @@ views_sources = files(
   'views/track_menu.py',
   'views/sleep_timer.py',
   'views/album_menu.py',
+  'views/add_to_playlist.py',
 )
 
 python.install_sources(views_sources, subdir: 'jamjar/views')

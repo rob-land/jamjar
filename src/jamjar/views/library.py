@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from gettext import gettext as _
 from typing import TYPE_CHECKING
 
 from gi.repository import Adw, GLib, Gtk

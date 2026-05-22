@@ -24,6 +24,7 @@ from ._common import (
     open_artist_by_id,
     start_instant_mix,
 )
+from .add_to_playlist import show_add_to_playlist_dialog
 
 if TYPE_CHECKING:
     from ..application import JamjarApplication
@@ -102,6 +103,9 @@ def _build_popover(track, app, window, parent) -> Gtk.PopoverMenu:
     add_action("toggle-favorite",
                lambda: _toggle_favorite(track, app),
                enabled=app.client is not None)
+    add_action("add-to-playlist",
+               lambda: show_add_to_playlist_dialog(track, app, window),
+               enabled=app.client is not None)
 
     menu = Gio.Menu()
     play_section = Gio.Menu()
@@ -118,6 +122,7 @@ def _build_popover(track, app, window, parent) -> Gtk.PopoverMenu:
 
     fav_section = Gio.Menu()
     fav_section.append(fav_label, "trackmenu.toggle-favorite")
+    fav_section.append("Add to Playlist", "trackmenu.add-to-playlist")
     menu.append_section(None, fav_section)
 
     popover = Gtk.PopoverMenu.new_from_model(menu)

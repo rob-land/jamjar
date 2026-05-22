@@ -318,6 +318,38 @@ class JellyfinClient:
         })
         return [track_from_json(item) for item in data.get("Items", [])]
 
+    async def create_playlist(self, name: str,
+                              item_ids: list[str] | None = None) -> Playlist:
+        data = await self._post_json(
+            "/Playlists",
+            body={
+                "Name":      name,
+                "Ids":       item_ids or [],
+                "MediaType": "Audio",
+            },
+            params={"userId": self.user_id},
+        )
+        return playlist_from_json(data)
+
+    async def add_to_playlist(self, playlist_id: str, item_ids: list[str]) -> None:
+        await self._post_json(
+            f"/Playlists/{playlist_id}/Items",
+            params={
+                "userId": self.user_id,
+                "ids":    ",".join(item_ids),
+            },
+        )
+
+    async def update_playlist(self, playlist_id: str, *, name: str) -> None:
+        await self._post_json(
+            f"/Playlists/{playlist_id}",
+            body={"Name": name},
+            params={"userId": self.user_id},
+        )
+
+    async def delete_playlist(self, playlist_id: str) -> None:
+        await self._delete(f"/Playlists/{playlist_id}?userId={self.user_id}")
+
     async def instant_mix(self, item_id: str, limit: int = 50) -> list[Track]:
         data = await self._get_json(f"/Items/{item_id}/InstantMix", params={
             "userId":                 self.user_id,
