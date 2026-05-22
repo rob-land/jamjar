@@ -82,8 +82,9 @@ opacity transition smooths the active-line swap; scroll resets to top
 on track change.
 
 Follow-ups:
-- Queue pane as a third carousel page (originally proposed in
-  `DESIGN.md`).
+- Queue pane as a third carousel page — done. The Now Playing carousel now
+  includes an Up Next page with current-track highlighting and tap-to-jump
+  queue navigation.
 
 ### 4. Volume slider in the bar (desktop) — done
 `MenuButton volume_button` between repeat and expand on the now-playing bar.
@@ -146,10 +147,13 @@ Albums and Songs need sort options (name, year, recently added, artist) and
 filter options (genre at minimum). Jellyfin supports the query params via
 `SortBy` / `Genres` / `Years`; exposing them is mostly UI.
 
-### 10. Up-next preview on the bar
-Small popover from the bar (or a hover/long-press on the bar) showing the
-next 2–3 tracks with covers. Cheap polish that signals "this app knows what
-it's doing."
+### 10. Up-next preview on the bar — done
+Small popover from the bar showing the next 2–3 tracks. Cheap polish that
+signals "this app knows what it's doing."
+
+Implemented as a desktop/wide-bar `MenuButton` showing the next three queue
+items, wrapping when repeat-all is active. The compact phone bar stays lean;
+phone queue preview lives on the Now Playing carousel's Up Next page.
 
 ### 11. History page
 A proper "Recently Played" list (separate from the home shelf), backed by

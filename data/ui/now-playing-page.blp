@@ -83,6 +83,42 @@ template $JamjarNowPlayingPage: Adw.NavigationPage {
                   valign: start;
                 };
               }
+
+              ScrolledWindow {
+                hscrollbar-policy: never;
+                width-request: 272;
+                height-request: 272;
+
+                child: Box {
+                  orientation: vertical;
+                  spacing: 8;
+                  margin-start: 8;
+                  margin-end: 8;
+                  margin-top: 8;
+                  margin-bottom: 8;
+
+                  Label {
+                    label: _("Up Next");
+                    xalign: 0;
+                    styles ["heading"]
+                  }
+
+                  Label queue_empty_label {
+                    label: _("The queue is empty");
+                    wrap: true;
+                    xalign: 0.5;
+                    vexpand: true;
+                    valign: center;
+                    styles ["dim-label"]
+                  }
+
+                  ListBox now_playing_queue_list {
+                    visible: false;
+                    selection-mode: none;
+                    styles ["boxed-list"]
+                  }
+                };
+              }
             }
 
             Adw.CarouselIndicatorDots {
