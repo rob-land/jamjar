@@ -318,6 +318,16 @@ class JellyfinClient:
         })
         return [track_from_json(item) for item in data.get("Items", [])]
 
+    async def instant_mix(self, item_id: str, limit: int = 50) -> list[Track]:
+        data = await self._get_json(f"/Items/{item_id}/InstantMix", params={
+            "userId":                 self.user_id,
+            "Limit":                  limit,
+            "Fields":                 "MediaSources,AlbumPrimaryImageTag",
+            "EnableTotalRecordCount": "false",
+        })
+        return [track_from_json(item) for item in data.get("Items", [])
+                if item.get("Type") == "Audio"]
+
     async def search(self, query: str, limit: int = 24) -> list[SearchHit]:
         data = await self._get_json("/Search/Hints", params={
             "userId":           self.user_id,

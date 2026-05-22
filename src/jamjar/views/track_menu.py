@@ -18,7 +18,12 @@ from typing import TYPE_CHECKING
 
 from gi.repository import Gdk, Gio, GLib, Gtk
 
-from ._common import commit_favorite, open_album_by_id, open_artist_by_id
+from ._common import (
+    commit_favorite,
+    open_album_by_id,
+    open_artist_by_id,
+    start_instant_mix,
+)
 
 if TYPE_CHECKING:
     from ..application import JamjarApplication
@@ -83,6 +88,11 @@ def _build_popover(track, app, window, parent) -> Gtk.PopoverMenu:
     add_action("queue-add",
                lambda: app.queue and app.queue.append([track]),
                enabled=app.queue is not None)
+    add_action("start-radio",
+               lambda: start_instant_mix(track, app, label="track radio"),
+               enabled=(app.client is not None
+                        and app.queue is not None
+                        and app.player is not None))
     add_action("go-to-album",
                lambda: _go_to_album(track, app, window),
                enabled=bool(track.album_id))
@@ -98,6 +108,7 @@ def _build_popover(track, app, window, parent) -> Gtk.PopoverMenu:
     play_section.append("Play Now", "trackmenu.play-now")
     play_section.append("Play Next", "trackmenu.play-next")
     play_section.append("Add to Queue", "trackmenu.queue-add")
+    play_section.append("Start Track Radio", "trackmenu.start-radio")
     menu.append_section(None, play_section)
 
     nav_section = Gio.Menu()

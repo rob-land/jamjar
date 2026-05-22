@@ -79,6 +79,11 @@ template $JamjarArtistPage: Adw.NavigationPage {
                   spacing: 6;
                   margin-top: 6;
 
+                  Button artist_radio_button {
+                    label: _("Start Radio");
+                    styles ["pill", "suggested-action"]
+                  }
+
                   ToggleButton favorite_button {
                     icon-name: "heart-outline-symbolic";
                     tooltip-text: _("Favorite");

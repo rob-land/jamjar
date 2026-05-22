@@ -11,6 +11,7 @@ from ._common import (
     clear_remote_image,
     commit_favorite,
     load_remote_image_async,
+    start_instant_mix,
 )
 from .album_menu import install_album_menu
 
@@ -26,6 +27,7 @@ class ArtistPage(Adw.NavigationPage):
     artist_image        = Gtk.Template.Child()
     artist_name_label   = Gtk.Template.Child()
     artist_meta_label   = Gtk.Template.Child()
+    artist_radio_button = Gtk.Template.Child()
     favorite_button     = Gtk.Template.Child()
     artist_albums_grid  = Gtk.Template.Child()
 
@@ -47,6 +49,7 @@ class ArtistPage(Adw.NavigationPage):
 
         self._suppress_favorite = False
         self._sync_favorite(bool(artist.user_data.get("IsFavorite")))
+        self.artist_radio_button.connect("clicked", self._on_start_radio)
         self.favorite_button.connect("toggled", self._on_favorite_toggled)
 
         from gi.repository import Gio
@@ -114,3 +117,6 @@ class ArtistPage(Adw.NavigationPage):
         apply_favorite_visual(button, new_state)
         commit_favorite(self.app.client, self.artist, new_state, self.app.runner, app=self.app,
                         on_failure=lambda: self._sync_favorite(not new_state))
+
+    def _on_start_radio(self, _button) -> None:
+        start_instant_mix(self.artist, self.app, label="artist radio")

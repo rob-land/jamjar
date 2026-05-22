@@ -164,13 +164,18 @@ sidebar (or a sub-nav under Home).
 
 ## Tier 3 — bigger lift, clear feature parity
 
-### 12. Instant Mix / radio from any item
+### 12. Instant Mix / radio from any item — partial
 Jellyfin's `/Items/{id}/InstantMix` is the engine. Start with "Start radio
 from this album/artist" via context menu (Tier-2-adjacent quick win since the
 context-menu plumbing already exists), then expand to a standalone station
 picker filtered by genre / era / mood. Investigate which `/Items` query
 params (`SortBy`, `Genres`, `Years`, instant-mix endpoints) the UI needs to
 expose.
+
+Track and album context menus now expose Start Track Radio / Start Album Radio,
+and the artist detail page has Start Radio. All are backed by
+`/Items/{id}/InstantMix`, replacing the queue and starting playback. Still open:
+standalone station picker, genre / era / mood radio.
 
 ### 13. Offline downloads
 Per `DESIGN.md` v0.3. Symfonium's killer feature for phone users.
