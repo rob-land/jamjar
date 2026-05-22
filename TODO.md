@@ -142,10 +142,10 @@ user's playlists and offers "Create new". On the Playlist page, support
 rename, delete, and reorder of tracks (drag, like the queue). Backed by the
 Jellyfin Playlists endpoints. Flagged for v0.2 in `DESIGN.md`.
 
-### 9. Sort / filter on Library pages
-Albums and Songs need sort options (name, year, recently added, artist) and
-filter options (genre at minimum). Jellyfin supports the query params via
-`SortBy` / `Genres` / `Years`; exposing them is mostly UI.
+### 9. Sort / filter on Library pages — partial
+Albums and Songs have a header sort popover (title, year, recently added /
+played, artist, shuffle). Letter jump still handles A–Z filtering. Genre /
+year filters remain open.
 
 ### 10. Up-next preview on the bar — done
 Small popover from the bar showing the next 2–3 tracks. Cheap polish that
@@ -155,10 +155,10 @@ Implemented as a desktop/wide-bar `MenuButton` showing the next three queue
 items, wrapping when repeat-all is active. The compact phone bar stays lean;
 phone queue preview lives on the Now Playing carousel's Up Next page.
 
-### 11. History page
-A proper "Recently Played" list (separate from the home shelf), backed by
-`/Users/{u}/Items/Resume` or the play history endpoint. Reachable from the
-sidebar (or a sub-nav under Home).
+### 11. History page — done
+Sidebar **History** page lists up to 200 recently played tracks (same
+`/Items?SortBy=DatePlayed&Filters=IsPlayed` query as the home shelf), with
+track context menus and tap-to-play.
 
 ---
 

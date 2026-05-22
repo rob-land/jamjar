@@ -1,0 +1,47 @@
+using Gtk 4.0;
+using Adw 1;
+
+template $JamjarHistoryPage: Adw.NavigationPage {
+  title: _("History");
+  tag: "history";
+
+  child: Adw.ToolbarView {
+    [top]
+    Adw.HeaderBar {
+      [start]
+      Button sidebar_toggle {
+        icon-name: "sidebar-show-symbolic";
+        tooltip-text: _("Toggle Sidebar");
+      }
+
+      [end]
+      Button history_search {
+        icon-name: "system-search-symbolic";
+        action-name: "app.search";
+        tooltip-text: _("Search");
+      }
+    }
+
+    content: ScrolledWindow {
+      hscrollbar-policy: never;
+
+      child: Box {
+        orientation: vertical;
+
+        Adw.StatusPage empty_state {
+          icon-name: "audio-x-generic-symbolic";
+          title: _("No play history");
+          description: _("Tracks you play will appear here.");
+          vexpand: true;
+        }
+
+        ListBox history_list {
+          visible: false;
+          selection-mode: none;
+
+          styles ["boxed-list"]
+        }
+      };
+    };
+  };
+}

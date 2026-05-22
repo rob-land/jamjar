@@ -42,6 +42,7 @@ views_sources = files(
   'views/__init__.py',
   'views/_common.py',
   'views/home.py',
+  'views/history.py',
   'views/library.py',
   'views/album.py',
   'views/artist.py',

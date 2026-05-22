@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import inspect
 import logging
 from collections.abc import Awaitable, Callable
 
@@ -126,9 +127,12 @@ class WindowedListModel(GObject.Object, Gio.ListModel):
         limit = self.FIRST_PAGE_SIZE if start == 0 else self.PAGE_SIZE
 
         filter_kwargs = dict(self._filter)
+        # Artists/playlists fetchers ignore sort_*; drop keys they don't accept.
+        allowed = set(inspect.signature(self._fetcher).parameters)
+        fetch_kwargs = {k: v for k, v in filter_kwargs.items() if k in allowed}
 
         async def runme():
-            return await self._fetcher(start=start, limit=limit, **filter_kwargs)
+            return await self._fetcher(start=start, limit=limit, **fetch_kwargs)
 
         def done(future):
             try:
@@ -183,6 +187,9 @@ class WindowedListModel(GObject.Object, Gio.ListModel):
         Pass with no arguments to clear the filter. In-flight fetches are
         invalidated by reset()'s gen bump, so their results are dropped if
         they land after the filter has moved on.
+
+        Optional ``sort_by`` and ``sort_order`` are stored in ``_filter`` and
+        forwarded to Jellyfin list endpoints that support them.
         """
         new_filter = {k: v for k, v in kwargs.items() if v is not None}
         if new_filter == self._filter and self._items:

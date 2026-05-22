@@ -22,6 +22,22 @@ if TYPE_CHECKING:
 
 log = logging.getLogger(__name__)
 
+# Jellyfin SortBy values for library tabs that support reordering.
+_ALBUM_SORTS: list[tuple[str, str]] = [
+    ("SortName",        "Title"),
+    ("ProductionYear",  "Year"),
+    ("DateCreated",     "Recently added"),
+    ("Random",          "Shuffle"),
+]
+_SONG_SORTS: list[tuple[str, str]] = [
+    ("SortName",             "Title"),
+    ("AlbumArtist,Artist",   "Artist"),
+    ("Album",                "Album"),
+    ("DatePlayed",           "Recently played"),
+    ("Random",               "Shuffle"),
+]
+_SORT_TABS = frozenset({"albums", "songs"})
+
 
 @Gtk.Template(resource_path="/land/rob/jamjar/library-page.ui")
 class LibraryPage(Adw.NavigationPage):
@@ -31,6 +47,7 @@ class LibraryPage(Adw.NavigationPage):
 
     sidebar_toggle  = Gtk.Template.Child()
     stack           = Gtk.Template.Child()
+    sort_button     = Gtk.Template.Child()
     letter_button   = Gtk.Template.Child()
     albums_grid     = Gtk.Template.Child()
     artists_grid    = Gtk.Template.Child()
@@ -50,7 +67,12 @@ class LibraryPage(Adw.NavigationPage):
         # "#" = names that sort before "A" (digits/symbols), otherwise the
         # uppercase letter prefix being filtered on.
         self._tab_letters: dict[str, str | None] = {n: None for n in self.LETTER_TABS}
+        self._tab_sorts: dict[str, str] = {
+            "albums": _ALBUM_SORTS[0][0],
+            "songs":  _SONG_SORTS[0][0],
+        }
         self.sidebar_toggle.connect("clicked", lambda *_: self.window.toggle_sidebar())
+        self._wire_sort_button()
         self._wire_albums()
         self._wire_artists()
         self._wire_songs()
@@ -85,6 +107,82 @@ class LibraryPage(Adw.NavigationPage):
         if name:
             self._load_tab(name)
         self._refresh_letter_button()
+        self._refresh_sort_button()
+
+    # ------- sort -------
+
+    def _wire_sort_button(self) -> None:
+        self._sort_popover = Gtk.Popover()
+        self._sort_box = Gtk.Box(
+            orientation=Gtk.Orientation.VERTICAL,
+            margin_top=8, margin_bottom=8, margin_start=8, margin_end=8,
+            spacing=4,
+        )
+        self._sort_popover.set_child(self._sort_box)
+        self.sort_button.set_popover(self._sort_popover)
+        self.stack.connect("notify::visible-child-name",
+                           lambda *_: self._rebuild_sort_popover())
+        self._rebuild_sort_popover()
+
+    def _rebuild_sort_popover(self) -> None:
+        for child in list(self._sort_box):
+            self._sort_box.remove(child)
+        name = self.stack.get_visible_child_name()
+        if name not in _SORT_TABS:
+            return
+        options = _ALBUM_SORTS if name == "albums" else _SONG_SORTS
+        active = self._tab_sorts.get(name, "SortName")
+        for sort_key, label in options:
+            btn = Gtk.Button(label=label)
+            btn.add_css_class("flat")
+            if sort_key == active:
+                btn.add_css_class("suggested-action")
+            btn.connect("clicked", self._on_sort_clicked, sort_key)
+            self._sort_box.append(btn)
+
+    def _on_sort_clicked(self, _btn, sort_key: str) -> None:
+        self._sort_popover.popdown()
+        name = self.stack.get_visible_child_name()
+        if name not in _SORT_TABS:
+            return
+        self._tab_sorts[name] = sort_key
+        self._apply_tab_filter(name)
+        self._loaded.add(name)
+        self._rebuild_sort_popover()
+        self._refresh_sort_button()
+
+    def _filter_kwargs_for_tab(self, tab: str) -> dict:
+        kwargs: dict = {}
+        if tab in _SORT_TABS:
+            kwargs["sort_by"] = self._tab_sorts.get(tab, "SortName")
+        letter = self._tab_letters.get(tab)
+        if letter == "#":
+            kwargs["name_less_than"] = "A"
+        elif letter:
+            kwargs["name_starts_with"] = letter
+        return kwargs
+
+    def _apply_tab_filter(self, tab: str) -> None:
+        if self.app.library is None or tab not in self.LETTER_TABS:
+            return
+        model = {
+            "albums":  self.app.library.albums,
+            "artists": self.app.library.artists,
+            "songs":   self.app.library.songs,
+        }[tab]
+        model.set_filter(**self._filter_kwargs_for_tab(tab))
+
+    def _refresh_sort_button(self) -> None:
+        name = self.stack.get_visible_child_name()
+        if name not in _SORT_TABS:
+            self.sort_button.set_sensitive(False)
+            self.sort_button.set_tooltip_text(_("Sort"))
+            return
+        self.sort_button.set_sensitive(True)
+        options = _ALBUM_SORTS if name == "albums" else _SONG_SORTS
+        sort_key = self._tab_sorts.get(name, "SortName")
+        label = next((lbl for key, lbl in options if key == sort_key), "Title")
+        self.sort_button.set_tooltip_text(_("Sort: %s") % label)
 
     # ------- jump-to-letter -------
 
@@ -116,24 +214,15 @@ class LibraryPage(Adw.NavigationPage):
         name = self.stack.get_visible_child_name()
         if name not in self.LETTER_TABS or self.app.library is None:
             return
-        model = {
-            "albums":  self.app.library.albums,
-            "artists": self.app.library.artists,
-            "songs":   self.app.library.songs,
-        }[name]
 
         if choice == "All":
-            model.set_filter()
             self._tab_letters[name] = None
         elif choice == "#":
-            model.set_filter(name_less_than="A")
             self._tab_letters[name] = "#"
         else:
-            model.set_filter(name_starts_with=choice)
             self._tab_letters[name] = choice
 
-        # set_filter resets and refetches; mark the tab as loaded so the
-        # tab-change loader doesn't kick a redundant ensure_first_page.
+        self._apply_tab_filter(name)
         self._loaded.add(name)
         self._refresh_letter_button()
 

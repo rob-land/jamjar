@@ -9,6 +9,7 @@ blueprint_sources = files(
   'artist-page.blp',
   'playlist-page.blp',
   'home-page.blp',
+  'history-page.blp',
   'search-page.blp',
   'now-playing-bar.blp',
   'now-playing-page.blp',

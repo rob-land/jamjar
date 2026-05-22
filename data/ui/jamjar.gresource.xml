@@ -9,6 +9,7 @@
     <file compressed="true" preprocess="xml-stripblanks">artist-page.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">playlist-page.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">home-page.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">history-page.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">search-page.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">now-playing-bar.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">now-playing-page.ui</file>

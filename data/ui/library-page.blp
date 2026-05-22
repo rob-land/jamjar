@@ -27,6 +27,13 @@ template $JamjarLibraryPage: Adw.NavigationPage {
       }
 
       [end]
+      MenuButton sort_button {
+        icon-name: "view-sort-ascending-symbolic";
+        tooltip-text: _("Sort");
+        styles ["flat"]
+      }
+
+      [end]
       MenuButton letter_button {
         label: "A-Z";
         tooltip-text: _("Jump to letter");

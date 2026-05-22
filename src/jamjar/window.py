@@ -12,6 +12,7 @@ if TYPE_CHECKING:
 
 from .views.album import AlbumPage
 from .views.artist import ArtistPage
+from .views.history import HistoryPage
 from .views.home import HomePage
 from .views.library import LibraryPage
 from .views.login import LoginDialog
@@ -24,6 +25,7 @@ log = logging.getLogger(__name__)
 
 SIDEBAR_PAGES: list[tuple[str, str, str]] = [
     ("home",        "user-home-symbolic",                    "Home"),
+    ("history",     "clock-symbolic",                        "History"),
     ("library",     "folder-music-symbolic",                 "Library"),
     ("now-playing", "media-playback-start-symbolic",         "Now Playing"),
     ("queue",       "view-list-symbolic",                    "Queue"),
@@ -175,6 +177,8 @@ class JamjarWindow(Adw.ApplicationWindow):
     def _build_page(self, name: str) -> Adw.NavigationPage | None:
         if name == "home":
             return HomePage(self.app, self)
+        if name == "history":
+            return HistoryPage(self.app, self)
         if name == "library":
             return LibraryPage(self.app, self)
         if name == "search":

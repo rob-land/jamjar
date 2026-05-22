@@ -8,6 +8,7 @@ data/ui/album-page.blp
 data/ui/artist-page.blp
 data/ui/playlist-page.blp
 data/ui/home-page.blp
+data/ui/history-page.blp
 data/ui/search-page.blp
 data/ui/now-playing-bar.blp
 data/ui/now-playing-page.blp
