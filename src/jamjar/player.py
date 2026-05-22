@@ -60,6 +60,7 @@ class Player(GObject.Object):
         self._max_bitrate = 0
         self._duration_emitted: float = 0.0
         self._state = Gst.State.NULL
+        # Set in about-to-finish when the next URI is queued; consumed on EOS.
         self._gapless_next: Track | None = None
         self._tick_source = GLib.timeout_add(500, self._tick)
 
@@ -92,7 +93,7 @@ class Player(GObject.Object):
         self.pipeline.set_state(Gst.State.NULL)
         self.pipeline.set_property("uri", url)
         self.pipeline.set_state(Gst.State.PLAYING)
-        self.emit("track-changed", track)
+        self._notify_track_started(track)
 
     def pause(self) -> None:
         self.pipeline.set_state(Gst.State.PAUSED)
@@ -140,9 +141,18 @@ class Player(GObject.Object):
         ns = int(max(0.0, seconds) * Gst.SECOND)
         self.pipeline.seek_simple(
             Gst.Format.TIME,
-            Gst.SeekFlags.FLUSH | Gst.SeekFlags.KEY_UNIT,
+            Gst.SeekFlags.FLUSH | Gst.SeekFlags.ACCURATE,
             ns,
         )
+        # Push an immediate position update so the scrubber doesn't fight the
+        # 500 ms poll until the user releases the slider.
+        GLib.idle_add(self._emit_seek_position)
+
+    def _emit_seek_position(self) -> bool:
+        ok, pos = self.pipeline.query_position(Gst.Format.TIME)
+        if ok:
+            self.emit("position-changed", pos / Gst.SECOND)
+        return False
 
     @property
     def position(self) -> float:
@@ -166,15 +176,24 @@ class Player(GObject.Object):
         else:
             self.play(track)
 
+    def _notify_track_started(self, track: Track) -> None:
+        """Emit UI-facing signals when a new track becomes current."""
+        self._duration_emitted = 0.0
+        self.emit("track-changed", track)
+        self.emit("position-changed", 0.0)
+        if track.duration_seconds > 0:
+            self.emit("duration-changed", track.duration_seconds)
+
     def _on_about_to_finish(self, _playbin) -> None:
-        # Special: this runs on a streaming thread. Setting the URI directly is
-        # the documented gapless pattern; the pipeline picks it up at EOS.
+        # Runs on a GStreamer streaming thread — only touch the pipeline URI
+        # here; queue/UI sync happens on the main thread when EOS lands.
         if self.queue.repeat == RepeatMode.ONE and self.queue.current:
             self._gapless_next = self.queue.current
             url = self.queue.client.stream_url(
                 self.queue.current, codec=self._codec, max_bitrate=self._max_bitrate
             )
             self.pipeline.set_property("uri", url)
+            GLib.idle_add(self._complete_gapless_transition)
             return
         nxt = self.queue.peek_next()
         if nxt is not None:
@@ -183,21 +202,37 @@ class Player(GObject.Object):
                 nxt, codec=self._codec, max_bitrate=self._max_bitrate
             )
             self.pipeline.set_property("uri", url)
+            # EOS may not arrive for a gapless handoff; sync on the GTK thread
+            # as soon as the next URI is queued.
+            GLib.idle_add(self._complete_gapless_transition)
+
+    def _complete_gapless_transition(self) -> bool:
+        """Sync queue index and UI after playbin starts the prefetched URI."""
+        pending = self._gapless_next
+        self._gapless_next = None
+        if pending is None:
+            return False
+
+        if self.queue.repeat == RepeatMode.ONE:
+            track = self.queue.current
+        else:
+            track = self.queue.advance(emit_current_changed=False)
+
+        if track is None:
+            self.stop()
+            return False
+
+        log.debug("gapless transition to %s", track.id)
+        self._notify_track_started(track)
+        self.queue.emit("queue-changed")
+        return False
 
     def _on_eos(self, _bus, _msg) -> None:
-        # playbin3 fires EOS after about-to-finish even when we set a new URI;
-        # update queue/UI state without recursively restarting the pipeline.
-        gapless_next = self._gapless_next
-        self._gapless_next = None
-        if gapless_next is not None:
-            if self.queue.repeat == RepeatMode.ONE:
-                return
-            new = self.queue.advance(emit_current_changed=False)
-            if new is not None:
-                self.emit("track-changed", new)
-                self.queue.emit("queue-changed")
-            else:
-                self.stop()
+        # After about-to-finish the pipeline may already be playing the next
+        # URI without another EOS for that handoff — consume the pending track
+        # here so metadata and the scrubber stay in sync with the audio.
+        if self._gapless_next is not None:
+            self._complete_gapless_transition()
             return
 
         if self.queue.advance() is None:

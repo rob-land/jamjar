@@ -12,6 +12,7 @@ from ..queue import RepeatMode
 from ._common import (
     apply_favorite_visual,
     commit_favorite,
+    escape_markup,
     format_duration,
     load_remote_image_async,
     make_link_label,
@@ -58,6 +59,7 @@ class NowPlayingBar(Gtk.Box):
     favorite_button     = Gtk.Template.Child()
     shuffle_button      = Gtk.Template.Child()
     repeat_button       = Gtk.Template.Child()
+    up_next_button      = Gtk.Template.Child()
     volume_button       = Gtk.Template.Child()
     expand_button       = Gtk.Template.Child()
 
@@ -76,6 +78,7 @@ class NowPlayingBar(Gtk.Box):
         self.favorite_button.connect("toggled", self._on_favorite_toggled)
         self.shuffle_button.connect("toggled", self._on_shuffle_toggled)
         self.repeat_button.connect("clicked", self._on_repeat_clicked)
+        self._wire_up_next_button()
         self._wire_volume_button()
         # In compact mode the expand_button is hidden, so let a tap on the
         # cover/title area open the full Now Playing page instead.
@@ -98,6 +101,8 @@ class NowPlayingBar(Gtk.Box):
         player.connect("state-changed",    self._on_state)
         queue.connect("notify::shuffle",   lambda *_: self._sync_shuffle())
         queue.connect("notify::repeat",    lambda *_: self._sync_repeat())
+        queue.connect("queue-changed",      lambda *_: self._refresh_up_next())
+        queue.connect("current-changed",    lambda *_: self._refresh_up_next())
         win = self.get_root()
         app = win.get_application() if win else None
         if app is not None:
@@ -107,6 +112,7 @@ class NowPlayingBar(Gtk.Box):
         self._on_state(player, "playing" if player.is_playing else "paused")
         self._sync_shuffle()
         self._sync_repeat()
+        self._refresh_up_next()
         # Seed the volume slider/icon from the player (which application.py
         # already restored from GSettings).
         self._refresh_volume_icon(player.volume)
@@ -118,7 +124,8 @@ class NowPlayingBar(Gtk.Box):
         wide = not self.compact
         for w in (self.progress_scale, self.position_label, self.duration_label,
                   self.favorite_button, self.shuffle_button, self.repeat_button,
-                  self.volume_button, self.prev_button, self.expand_button):
+                  self.up_next_button, self.volume_button, self.prev_button,
+                  self.expand_button):
             w.set_visible(wide)
         # Title/artist column needs a generous min in desktop mode (so the
         # progress scale doesn't crush it) but can shrink freely on phone.
@@ -143,6 +150,10 @@ class NowPlayingBar(Gtk.Box):
         self.title_label.set_label(track.name)
         self.artist_label.set_label(track.primary_artist)
         self._wire_artist_link(track)
+        self._suppress_seek = True
+        self.progress_adjustment.set_value(0.0)
+        self.position_label.set_label("0:00")
+        self._suppress_seek = False
         if (track.album_image_tag or track.image_tag) and self.client:
             url = self.client.cover_url(
                 track.album_id or track.id,
@@ -264,6 +275,61 @@ class NowPlayingBar(Gtk.Box):
         else:
             ctx.add_class("accent")
 
+    # ------- up next -------
+
+    def _wire_up_next_button(self) -> None:
+        wrapper = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6,
+                          margin_top=8, margin_bottom=8,
+                          margin_start=8, margin_end=8,
+                          width_request=260)
+        title = Gtk.Label(label="Up Next", xalign=0)
+        title.add_css_class("heading")
+        empty = Gtk.Label(label="Nothing queued", xalign=0.5,
+                          margin_top=12, margin_bottom=12)
+        empty.add_css_class("dim-label")
+        rows = Gtk.ListBox(selection_mode=Gtk.SelectionMode.NONE)
+        rows.add_css_class("boxed-list")
+        wrapper.append(title)
+        wrapper.append(empty)
+        wrapper.append(rows)
+
+        popover = Gtk.Popover()
+        popover.set_child(wrapper)
+        self.up_next_button.set_popover(popover)
+        self._up_next_empty = empty
+        self._up_next_list = rows
+        self._refresh_up_next()
+
+    def _refresh_up_next(self) -> None:
+        if not hasattr(self, "_up_next_list"):
+            return
+        for child in list(self._up_next_list):
+            self._up_next_list.remove(child)
+
+        tracks = self._next_tracks(limit=3)
+        self._up_next_empty.set_visible(not tracks)
+        self._up_next_list.set_visible(bool(tracks))
+        for track in tracks:
+            row = Adw.ActionRow(
+                title=escape_markup(track.name),
+                subtitle=escape_markup(track.primary_artist),
+            )
+            duration = Gtk.Label(label=format_duration(track.duration_seconds))
+            duration.add_css_class("dim-label")
+            duration.add_css_class("numeric")
+            row.add_suffix(duration)
+            self._up_next_list.append(row)
+
+    def _next_tracks(self, limit: int) -> list:
+        if self.queue is None or not self.queue.tracks:
+            return []
+        tracks = self.queue.tracks
+        start = self.queue.index + 1 if self.queue.index >= 0 else 0
+        upcoming = tracks[start:start + limit]
+        if len(upcoming) < limit and self.queue.repeat == RepeatMode.ALL:
+            upcoming.extend(tracks[:limit - len(upcoming)])
+        return upcoming
+
     # ------- volume -------
 
     def _wire_volume_button(self) -> None:
@@ -320,20 +386,22 @@ class NowPlayingBar(Gtk.Box):
 class NowPlayingPage(Adw.NavigationPage):
     __gtype_name__ = "JamjarNowPlayingPage"
 
-    sidebar_toggle       = Gtk.Template.Child()
-    favorite_button      = Gtk.Template.Child()
-    now_playing_carousel = Gtk.Template.Child()
-    full_cover           = Gtk.Template.Child()
-    lyrics_box           = Gtk.Template.Child()
-    np_title    = Gtk.Template.Child()
-    np_artist   = Gtk.Template.Child()
-    np_album    = Gtk.Template.Child()
-    np_progress = Gtk.Template.Child()
-    np_position = Gtk.Template.Child()
-    np_duration = Gtk.Template.Child()
-    np_play     = Gtk.Template.Child()
-    np_shuffle  = Gtk.Template.Child()
-    np_repeat   = Gtk.Template.Child()
+    sidebar_toggle         = Gtk.Template.Child()
+    favorite_button        = Gtk.Template.Child()
+    now_playing_carousel   = Gtk.Template.Child()
+    full_cover             = Gtk.Template.Child()
+    lyrics_box             = Gtk.Template.Child()
+    queue_empty_label      = Gtk.Template.Child()
+    now_playing_queue_list = Gtk.Template.Child()
+    np_title              = Gtk.Template.Child()
+    np_artist             = Gtk.Template.Child()
+    np_album              = Gtk.Template.Child()
+    np_progress           = Gtk.Template.Child()
+    np_position           = Gtk.Template.Child()
+    np_duration           = Gtk.Template.Child()
+    np_play               = Gtk.Template.Child()
+    np_shuffle            = Gtk.Template.Child()
+    np_repeat             = Gtk.Template.Child()
 
     def __init__(self, app: JamjarApplication, window: JamjarWindow) -> None:
         super().__init__()
@@ -357,6 +425,8 @@ class NowPlayingPage(Adw.NavigationPage):
         if app.queue:
             app.queue.connect("notify::shuffle", lambda *_: self._sync_shuffle())
             app.queue.connect("notify::repeat",  lambda *_: self._sync_repeat())
+            app.queue.connect("queue-changed",   self._refresh_queue_page)
+            app.queue.connect("current-changed", self._refresh_queue_page)
 
         self.np_progress.connect("change-value", self._on_seek)
         self.np_shuffle.connect("toggled", self._on_shuffle_toggled)
@@ -370,6 +440,7 @@ class NowPlayingPage(Adw.NavigationPage):
             self._on_state(app.player, "playing" if app.player.is_playing else "paused")
             self._sync_shuffle()
             self._sync_repeat()
+            self._refresh_queue_page()
 
     def _on_track(self, _player, track) -> None:
         if track is None:
@@ -388,6 +459,10 @@ class NowPlayingPage(Adw.NavigationPage):
         self.np_title.set_label(track.name)
         self.np_artist.set_label(track.primary_artist)
         self.np_album.set_label(track.album)
+        self._suppress_seek = True
+        self.np_progress.get_adjustment().set_value(0.0)
+        self.np_position.set_label("0:00")
+        self._suppress_seek = False
         if track.artist_ids:
             artist_id = track.artist_ids[0]
             make_link_label(self.np_artist,
@@ -463,6 +538,48 @@ class NowPlayingPage(Adw.NavigationPage):
             return
         if self.app.queue.current.id == item_id:
             self._sync_favorite(is_favorite)
+
+    # ------- queue carousel page -------
+
+    def _refresh_queue_page(self, *_args) -> None:
+        queue = self.app.queue
+        for child in list(self.now_playing_queue_list):
+            self.now_playing_queue_list.remove(child)
+
+        if queue is None or not queue.tracks:
+            self.queue_empty_label.set_visible(True)
+            self.now_playing_queue_list.set_visible(False)
+            return
+
+        self.queue_empty_label.set_visible(False)
+        self.now_playing_queue_list.set_visible(True)
+        current_index = queue.index
+        for index, track in enumerate(queue.tracks):
+            row = Adw.ActionRow(
+                title=escape_markup(track.name),
+                subtitle=escape_markup(track.primary_artist),
+                activatable=True,
+            )
+            if index == current_index:
+                icon = Gtk.Image.new_from_icon_name("audio-volume-high-symbolic")
+                icon.set_tooltip_text("Now playing")
+                row.add_prefix(icon)
+            else:
+                number = Gtk.Label(label=str(index + 1), width_chars=2)
+                number.add_css_class("dim-label")
+                number.add_css_class("numeric")
+                row.add_prefix(number)
+            duration = Gtk.Label(label=format_duration(track.duration_seconds))
+            duration.add_css_class("dim-label")
+            duration.add_css_class("numeric")
+            row.add_suffix(duration)
+            row.connect("activated", lambda _row, i=index: self._jump_to_queue_row(i))
+            self.now_playing_queue_list.append(row)
+
+    def _jump_to_queue_row(self, index: int) -> None:
+        if self.app.queue is None:
+            return
+        self.app.queue.jump_to(index)
 
     # ------- lyrics -------
 
