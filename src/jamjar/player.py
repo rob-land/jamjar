@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import time
 
 from gi.repository import GLib, GObject, Gst
 
@@ -17,6 +18,9 @@ Gst.init(None)
 GST_PLAY_FLAG_VIDEO       = 0x0001
 GST_PLAY_FLAG_AUDIO       = 0x0002
 GST_PLAY_FLAG_SOFT_VOLUME = 0x0010
+
+PREVIOUS_CHAIN_SECONDS = 1.2
+RESTART_THRESHOLD_SECONDS = 3.0
 
 
 class Player(GObject.Object):
@@ -62,6 +66,7 @@ class Player(GObject.Object):
         self._state = Gst.State.NULL
         # Set in about-to-finish when the next URI is queued; consumed on EOS.
         self._gapless_next: Track | None = None
+        self._last_previous_at = 0.0
         self._tick_source = GLib.timeout_add(500, self._tick)
 
     # ------- public API -------
@@ -126,14 +131,22 @@ class Player(GObject.Object):
         self._bus.remove_signal_watch()
 
     def next(self) -> None:
+        self._last_previous_at = 0.0
         if self.queue.advance() is None:
             self.stop()
 
     def previous(self) -> None:
+        now = time.monotonic()
+        is_chained_press = now - self._last_previous_at <= PREVIOUS_CHAIN_SECONDS
+        self._last_previous_at = now
+
         ok, pos = self.pipeline.query_position(Gst.Format.TIME)
-        if ok and pos > 3 * Gst.SECOND:
+        if (not is_chained_press
+                and ok
+                and pos > RESTART_THRESHOLD_SECONDS * Gst.SECOND):
             self.seek(0.0)
             return
+
         if self.queue.previous() is not None:
             self.play(self.queue.current)
 
