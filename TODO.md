@@ -221,17 +221,10 @@ left non-clickable — they're activate-to-play surfaces and competing
 inner targets would be confusing. Right-click menu on those rows still
 offers "Go to Artist" / "Go to Album" for navigation.
 
-### 18. Persistent response cache for library JSON + manual refresh
-On a large collection, every cold start re-fetches Albums / Artists / Songs /
-Playlists from scratch. Wire up a SQLite cache (e.g.
-`aiohttp-client-cache`) under `GLib.get_user_cache_dir() / "jamjar" / "http"`
-so the warm path is instant, then revalidate in the background. Use a sane
-TTL or ETag/Last-Modified if Jellyfin supplies them. Pair this with a
-manual refresh action (pull-to-refresh on phone, header refresh button on
-desktop) so newly-added or removed items can be picked up without waiting
-for TTL expiry. The image cache (`src/jamjar/imagecache.py`, done) is keyed by
-`imageTag` and self-invalidates; the JSON cache will need explicit
-invalidation, which is why this is its own item.
+### 18. Persistent response cache for library JSON + manual refresh — partial
+**Refresh** buttons on Home and Library headers call `Library.refresh_all()`
+(clears album/artist detail caches and refetches all list models + home
+shelves). SQLite / `aiohttp-client-cache` warm-start caching is still open.
 
 ---
 

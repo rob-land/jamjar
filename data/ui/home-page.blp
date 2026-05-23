@@ -15,6 +15,13 @@ template $JamjarHomePage: Adw.NavigationPage {
       }
 
       [end]
+      Button home_refresh {
+        icon-name: "view-refresh-symbolic";
+        tooltip-text: _("Refresh");
+        styles ["flat"]
+      }
+
+      [end]
       Button home_search {
         icon-name: "system-search-symbolic";
         action-name: "app.search";

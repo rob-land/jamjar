@@ -99,7 +99,11 @@ class JamjarApplication(Adw.Application):
         # Restore persisted player state
         self.queue.shuffle = self.settings.get_boolean("shuffle")
         self.queue.repeat = int(self.settings.get_enum("repeat-mode"))
-        self.player.configure(volume=self.settings.get_double("volume"))
+        self.player.configure(
+            volume=self.settings.get_double("volume"),
+            replaygain=self.settings.get_boolean("replaygain"),
+        )
+        self.settings.connect("changed::replaygain", self._on_replaygain_changed)
 
         win = self.props.active_window
         self.mpris = MprisService(
@@ -256,6 +260,10 @@ class JamjarApplication(Adw.Application):
         # text entries (search, etc.) can still receive space characters.
 
     # ------- side-effects from player state -------
+
+    def _on_replaygain_changed(self, settings, _key) -> None:
+        if self.player is not None:
+            self.player.set_replaygain(settings.get_boolean("replaygain"))
 
     def _on_player_state(self, _player, state: str) -> None:
         if state == "playing" and not self._holding:

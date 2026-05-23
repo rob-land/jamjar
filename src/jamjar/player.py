@@ -62,6 +62,7 @@ class Player(GObject.Object):
 
         self._codec = "copy"
         self._max_bitrate = 0
+        self._replaygain = False
         self._duration_emitted: float = 0.0
         self._state = Gst.State.NULL
         # Set in about-to-finish when the next URI is queued; consumed on EOS.
@@ -72,10 +73,22 @@ class Player(GObject.Object):
     # ------- public API -------
 
     def configure(self, codec: str = "copy", max_bitrate: int = 0,
-                  volume: float = 1.0) -> None:
+                  volume: float = 1.0, *, replaygain: bool = False) -> None:
         self._codec = codec
         self._max_bitrate = max_bitrate
         self.set_volume(volume)
+        self.set_replaygain(replaygain)
+
+    def set_replaygain(self, enabled: bool) -> None:
+        self._replaygain = enabled
+        if not enabled:
+            self.pipeline.set_property("audio-filter", None)
+            return
+        filt = Gst.ElementFactory.make("rgvolume", "replaygain")
+        if filt is None:
+            log.warning("rgvolume element unavailable — ReplayGain disabled")
+            return
+        self.pipeline.set_property("audio-filter", filt)
 
     def set_volume(self, value: float) -> None:
         self.pipeline.set_property("volume", max(0.0, min(value, 1.0)))

@@ -23,6 +23,7 @@ class HomePage(Adw.NavigationPage):
     __gtype_name__ = "JamjarHomePage"
 
     sidebar_toggle      = Gtk.Template.Child()
+    home_refresh        = Gtk.Template.Child()
     recently_played_row = Gtk.Template.Child()
     recently_added_row  = Gtk.Template.Child()
     suggested_row       = Gtk.Template.Child()
@@ -32,7 +33,15 @@ class HomePage(Adw.NavigationPage):
         self.app = app
         self.window = window
         self.sidebar_toggle.connect("clicked", lambda *_: self.window.toggle_sidebar())
+        self.home_refresh.connect("clicked", self._on_refresh)
         GLib.idle_add(self._refresh)
+
+    def _on_refresh(self, _btn) -> None:
+        if self.app.library is None:
+            return
+        self.app.library.refresh_all()
+        if self.app.show_toast:
+            self.app.show_toast("Refreshing…")
 
     def _refresh(self) -> bool:
         lib = self.app.library

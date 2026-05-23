@@ -48,6 +48,7 @@ class LibraryPage(Adw.NavigationPage):
 
     sidebar_toggle  = Gtk.Template.Child()
     stack           = Gtk.Template.Child()
+    refresh_button  = Gtk.Template.Child()
     sort_button     = Gtk.Template.Child()
     letter_button   = Gtk.Template.Child()
     albums_grid     = Gtk.Template.Child()
@@ -73,6 +74,7 @@ class LibraryPage(Adw.NavigationPage):
             "songs":  _SONG_SORTS[0][0],
         }
         self.sidebar_toggle.connect("clicked", lambda *_: self.window.toggle_sidebar())
+        self.refresh_button.connect("clicked", self._on_refresh)
         self._wire_sort_button()
         self._wire_albums()
         self._wire_artists()
@@ -109,6 +111,15 @@ class LibraryPage(Adw.NavigationPage):
             self._load_tab(name)
         self._refresh_letter_button()
         self._refresh_sort_button()
+
+    def _on_refresh(self, _btn) -> None:
+        if self.app.library is None:
+            return
+        self._loaded.clear()
+        self.app.library.refresh_all()
+        self._load_visible_tab()
+        if self.app.show_toast:
+            self.app.show_toast(_("Refreshing library…"))
 
     # ------- sort -------
 

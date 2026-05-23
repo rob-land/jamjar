@@ -238,6 +238,18 @@ class Library(GObject.Object):
 
     # ------- top-level loaders -------
 
+    def refresh_all(self) -> None:
+        """Drop cached pages and refetch library + home shelves from the server."""
+        self._album_cache.clear()
+        self._artist_cache.clear()
+        for model in (self.albums, self.artists, self.songs):
+            model.reset()
+            model.ensure_first_page()
+        self.refresh_playlists()
+        self.load_recently_played()
+        self.load_recently_added()
+        self.load_suggested()
+
     def load_albums(self) -> None:
         self.albums.ensure_first_page()
 
