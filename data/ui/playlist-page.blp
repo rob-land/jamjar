@@ -46,8 +46,10 @@ template $JamjarPlaylistPage: Adw.NavigationPage {
             styles ["dim-label"]
           }
 
-          ListView playlist_tracks {
-            single-click-activate: true;
+          ListBox playlist_tracks {
+            selection-mode: none;
+
+            styles ["boxed-list"]
           }
         };
       };

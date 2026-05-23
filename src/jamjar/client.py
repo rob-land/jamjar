@@ -153,9 +153,9 @@ class JellyfinClient:
                 return await r.json()
             return None
 
-    async def _delete(self, path: str) -> None:
+    async def _delete(self, path: str, params: dict | None = None) -> None:
         async with self.session.delete(
-            f"{self.base}{path}", headers=self.headers
+            f"{self.base}{path}", params=params, headers=self.headers
         ) as r:
             self._check_auth(r)
             r.raise_for_status()
@@ -348,7 +348,27 @@ class JellyfinClient:
         )
 
     async def delete_playlist(self, playlist_id: str) -> None:
-        await self._delete(f"/Playlists/{playlist_id}?userId={self.user_id}")
+        await self._delete(
+            f"/Playlists/{playlist_id}",
+            params={"userId": self.user_id},
+        )
+
+    async def remove_from_playlist(self, playlist_id: str,
+                                  entry_ids: list[str]) -> None:
+        await self._delete(
+            f"/Playlists/{playlist_id}/Items",
+            params={
+                "userId":   self.user_id,
+                "entryIds": ",".join(entry_ids),
+            },
+        )
+
+    async def move_playlist_item(self, playlist_id: str, item_id: str,
+                                 new_index: int) -> None:
+        await self._post_json(
+            f"/Playlists/{playlist_id}/Items/{item_id}/Move/{new_index}",
+            params={"userId": self.user_id},
+        )
 
     async def instant_mix(self, item_id: str, limit: int = 50) -> list[Track]:
         data = await self._get_json(f"/Items/{item_id}/InstantMix", params={

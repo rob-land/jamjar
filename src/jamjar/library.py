@@ -248,6 +248,9 @@ class Library(GObject.Object):
         self.songs.ensure_first_page()
 
     def load_playlists(self) -> None:
+        self.refresh_playlists()
+
+    def refresh_playlists(self) -> None:
         async def runme():
             return await self.client.list_playlists()
         def done(future):
