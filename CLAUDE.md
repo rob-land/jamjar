@@ -195,6 +195,7 @@ These are real bugs that ate hours on the Clicker project. Re-reading before mak
 6. **`flatpak-pip-generator` quirks:**
    - Target `org.gnome.Sdk` (not freedesktop), since we're on the GNOME runtime
    - Module name uses underscore-joined package list: `python3-aiohttp_python_zeroconf_dbus_next`
+   - `aiosqlite` is required at runtime for the SQLite HTTP cache backend but is not always pulled in by the generator — add it to `requirements.txt` and ensure `python3-deps.json` includes a `python3-aiosqlite` module if missing.
    - The post-completion crash from the generator script is harmless; the JSON output is fine
 7. **D-pad / button auto-repeat races** (relevant for the player's transport buttons too) — single `pressed` boolean to gate the repeat loop, not a counter.
 8. **Test at 360×720 early.** Adaptive bugs almost never show up at desktop widths and are obvious in portrait phone. Use `Adw.Breakpoint` with `max-width: 600sp`.

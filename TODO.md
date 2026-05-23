@@ -220,10 +220,11 @@ left non-clickable — they're activate-to-play surfaces and competing
 inner targets would be confusing. Right-click menu on those rows still
 offers "Go to Artist" / "Go to Album" for navigation.
 
-### 18. Persistent response cache for library JSON + manual refresh — partial
-**Refresh** buttons on Home and Library headers call `Library.refresh_all()`
-(clears album/artist detail caches and refetches all list models + home
-shelves). SQLite / `aiohttp-client-cache` warm-start caching is still open.
+### 18. Persistent response cache for library JSON + manual refresh — done
+`aiohttp-client-cache` with SQLite under `~/.cache/jamjar/http/responses.sqlite`.
+Library lists TTL 1h; home shelves 15m; recently played 5m; item metadata 24h.
+Search, streams, images, and scrobble are excluded. **Refresh** clears the HTTP
+cache plus in-memory album/artist detail caches before refetching.
 
 ---
 

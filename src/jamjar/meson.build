@@ -24,6 +24,7 @@ python_sources = files(
   'auth.py',
   'secrets.py',
   'client.py',
+  'httpcache.py',
   'models.py',
   'library.py',
   'imagecache.py',

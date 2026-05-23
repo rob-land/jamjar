@@ -49,6 +49,7 @@ want `gst-plugins-good` and `gst-plugins-bad`.
 | Package | Used by | Required? |
 |---|---|---|
 | `aiohttp` | `client.py`, `auth.py` | yes |
+| `aiohttp-client-cache`, `aiosqlite` | `httpcache.py`, `client.py` | yes |
 | `python-zeroconf` | `discovery.py` (mDNS fallback) | recommended |
 | `dbus-next` | `mpris.py` | recommended (MPRIS goes silent without it) |
 

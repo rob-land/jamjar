@@ -8,11 +8,18 @@ import threading
 import urllib.parse
 from collections.abc import Callable
 from concurrent.futures import Future
+from datetime import timedelta
 from typing import Any
 
 import aiohttp
 
 from .auth import auth_header
+from .httpcache import (
+    HOME_SHELF_TTL,
+    METADATA_TTL,
+    RECENT_PLAY_TTL,
+    create_cached_session,
+)
 from .models import (
     Album,
     Artist,
@@ -101,7 +108,7 @@ class JellyfinClient:
 
     async def __aenter__(self) -> JellyfinClient:
         if self._session is None:
-            self._session = aiohttp.ClientSession()
+            self._session = create_cached_session()
         return self
 
     async def __aexit__(self, exc_type, exc, tb) -> None:
@@ -134,9 +141,21 @@ class JellyfinClient:
                 log.exception("on_unauthorized handler raised")
         raise Unauthorized(f"401 Unauthorized for {r.url}")
 
-    async def _get_json(self, path: str, params: dict | None = None) -> Any:
+    async def clear_http_cache(self) -> None:
+        cache = getattr(self.session, "cache", None)
+        if cache is not None:
+            await cache.clear()
+            log.info("cleared HTTP response cache")
+
+    async def _get_json(self, path: str, params: dict | None = None, *,
+                        expire_after: timedelta | None = None,
+                        refresh: bool = False) -> Any:
         async with self.session.get(
-            f"{self.base}{path}", params=params, headers=self.headers
+            f"{self.base}{path}",
+            params=params,
+            headers=self.headers,
+            expire_after=expire_after,
+            refresh=refresh,
         ) as r:
             self._check_auth(r)
             r.raise_for_status()
@@ -180,7 +199,7 @@ class JellyfinClient:
             "Limit":                  limit,
             "Fields":                 "AlbumPrimaryImageTag",
             "EnableTotalRecordCount": "false",
-        })
+        }, expire_after=RECENT_PLAY_TTL)
         return [track_from_json(item) for item in data.get("Items", [])]
 
     async def suggestions(self, limit: int = 12) -> list[Track]:
@@ -192,6 +211,7 @@ class JellyfinClient:
                 "enableTotalRecordCount": "false",
                 "fields":                 "AlbumPrimaryImageTag",
             },
+            expire_after=HOME_SHELF_TTL,
         )
         # Suggestions may include non-Audio items depending on server
         # config; defensive filter so we never try to render an album
@@ -206,6 +226,7 @@ class JellyfinClient:
         data = await self._get_json(
             f"/Users/{self.user_id}/Items/Latest",
             params={"IncludeItemTypes": "Audio", "Limit": limit},
+            expire_after=HOME_SHELF_TTL,
         )
         return [album_from_json(item) for item in data]
 
@@ -215,7 +236,7 @@ class JellyfinClient:
             "userId":           self.user_id,
             "IncludeItemTypes": include_item_types,
             "Recursive":        "true",
-        })
+        }, expire_after=METADATA_TTL)
         genres: list[str] = []
         for item in data.get("GenreItems") or []:
             name = item.get("Name")
@@ -329,7 +350,7 @@ class JellyfinClient:
             "ParentId": album_id,
             "SortBy":   "ParentIndexNumber,IndexNumber",
             "Fields":   "MediaSources,AlbumPrimaryImageTag",
-        })
+        }, expire_after=METADATA_TTL)
         return [track_from_json(item) for item in data.get("Items", [])]
 
     async def artist_albums(self, artist_id: str) -> list[Album]:
@@ -340,14 +361,14 @@ class JellyfinClient:
             "Recursive":        "true",
             "SortBy":           "ProductionYear,SortName",
             "Fields":           "ChildCount,ProductionYear,AlbumArtists",
-        })
+        }, expire_after=METADATA_TTL)
         return [album_from_json(item) for item in data.get("Items", [])]
 
     async def playlist_tracks(self, playlist_id: str) -> list[Track]:
         data = await self._get_json(f"/Playlists/{playlist_id}/Items", params={
             "userId": self.user_id,
             "Fields": "MediaSources,AlbumPrimaryImageTag",
-        })
+        }, expire_after=METADATA_TTL)
         return [track_from_json(item) for item in data.get("Items", [])]
 
     async def create_playlist(self, name: str,
@@ -408,7 +429,7 @@ class JellyfinClient:
             "Limit":                  limit,
             "Fields":                 "MediaSources,AlbumPrimaryImageTag",
             "EnableTotalRecordCount": "false",
-        })
+        }, expire_after=timedelta(seconds=0))
         return [track_from_json(item) for item in data.get("Items", [])
                 if item.get("Type") == "Audio"]
 
@@ -418,13 +439,14 @@ class JellyfinClient:
             "searchTerm":       query,
             "IncludeItemTypes": "Audio,MusicAlbum,MusicArtist",
             "Limit":            limit,
-        })
+        }, expire_after=timedelta(seconds=0))
         return [search_hit_from_json(item) for item in data.get("SearchHints", [])]
 
     async def get_item(self, item_id: str) -> dict:
         return await self._get_json(
             f"/Users/{self.user_id}/Items/{item_id}",
             params={"Fields": "MediaSources,AlbumPrimaryImageTag"},
+            expire_after=METADATA_TTL,
         )
 
     # ------- favorites -------

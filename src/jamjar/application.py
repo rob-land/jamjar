@@ -121,7 +121,13 @@ class JamjarApplication(Adw.Application):
         if self.player:
             self.player.close()
         if self.client:
-            self.runner.submit(self.client.close())
+            client = self.client
+
+            async def shutdown():
+                await client.clear_http_cache()
+                await client.close()
+
+            self.runner.submit(shutdown())
         self.client = None
         self.library = None
         self.queue = None

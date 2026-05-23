@@ -245,11 +245,27 @@ class Library(GObject.Object):
         self._artist_cache.clear()
         for model in (self.albums, self.artists, self.songs):
             model.reset()
+
+        async def clear_http():
+            await self.client.clear_http_cache()
+
+        def after_clear(future):
+            try:
+                future.result()
+            except Exception as e:
+                log.warning("HTTP cache clear failed: %s", e)
+            GLib.idle_add(self._refetch_after_cache_clear)
+
+        self.runner.submit(clear_http()).add_done_callback(after_clear)
+
+    def _refetch_after_cache_clear(self) -> bool:
+        for model in (self.albums, self.artists, self.songs):
             model.ensure_first_page()
         self.refresh_playlists()
         self.load_recently_played()
         self.load_recently_added()
         self.load_suggested()
+        return False
 
     def load_albums(self) -> None:
         self.albums.ensure_first_page()

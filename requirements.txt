@@ -1,4 +1,6 @@
 poetry-core
 aiohttp
+aiohttp-client-cache
+aiosqlite
 zeroconf
 dbus-next
