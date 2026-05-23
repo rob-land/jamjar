@@ -188,8 +188,9 @@ class WindowedListModel(GObject.Object, Gio.ListModel):
         invalidated by reset()'s gen bump, so their results are dropped if
         they land after the filter has moved on.
 
-        Optional ``sort_by`` and ``sort_order`` are stored in ``_filter`` and
-        forwarded to Jellyfin list endpoints that support them.
+        Optional ``sort_by``, ``sort_order``, ``genres``, and ``years`` are
+        stored in ``_filter`` and forwarded to Jellyfin list endpoints that
+        support them.
         """
         new_filter = {k: v for k, v in kwargs.items() if v is not None}
         if new_filter == self._filter and self._items:

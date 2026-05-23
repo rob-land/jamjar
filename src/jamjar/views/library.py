@@ -38,6 +38,11 @@ _SONG_SORTS: list[tuple[str, str]] = [
     ("Random",               "Shuffle"),
 ]
 _SORT_TABS = frozenset({"albums", "songs"})
+_FILTER_TABS = _SORT_TABS
+_FILTER_ITEM_TYPES = {
+    "albums": "MusicAlbum",
+    "songs":  "Audio",
+}
 
 
 @Gtk.Template(resource_path="/land/rob/jamjar/library-page.ui")
@@ -49,6 +54,7 @@ class LibraryPage(Adw.NavigationPage):
     sidebar_toggle  = Gtk.Template.Child()
     stack           = Gtk.Template.Child()
     refresh_button  = Gtk.Template.Child()
+    filter_button   = Gtk.Template.Child()
     sort_button     = Gtk.Template.Child()
     letter_button   = Gtk.Template.Child()
     albums_grid     = Gtk.Template.Child()
@@ -73,8 +79,13 @@ class LibraryPage(Adw.NavigationPage):
             "albums": _ALBUM_SORTS[0][0],
             "songs":  _SONG_SORTS[0][0],
         }
+        self._tab_genres: dict[str, str | None] = {n: None for n in _FILTER_TABS}
+        self._tab_years: dict[str, int | None] = {n: None for n in _FILTER_TABS}
+        self._filters_cache: dict[str, tuple[list[str], list[int]]] = {}
+        self._filters_loading = False
         self.sidebar_toggle.connect("clicked", lambda *_: self.window.toggle_sidebar())
         self.refresh_button.connect("clicked", self._on_refresh)
+        self._wire_filter_button()
         self._wire_sort_button()
         self._wire_albums()
         self._wire_artists()
@@ -111,6 +122,7 @@ class LibraryPage(Adw.NavigationPage):
             self._load_tab(name)
         self._refresh_letter_button()
         self._refresh_sort_button()
+        self._refresh_filter_button()
 
     def _on_refresh(self, _btn) -> None:
         if self.app.library is None:
@@ -120,6 +132,183 @@ class LibraryPage(Adw.NavigationPage):
         self._load_visible_tab()
         if self.app.show_toast:
             self.app.show_toast(_("Refreshing library…"))
+        self._filters_cache.clear()
+
+    # ------- genre / year filter -------
+
+    def _wire_filter_button(self) -> None:
+        scrolled = Gtk.ScrolledWindow()
+        scrolled.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        scrolled.set_max_content_height(420)
+        scrolled.set_propagate_natural_height(True)
+        self._filter_box = Gtk.Box(
+            orientation=Gtk.Orientation.VERTICAL,
+            margin_top=8, margin_bottom=8, margin_start=8, margin_end=8,
+            spacing=8,
+        )
+        scrolled.set_child(self._filter_box)
+        self._filter_popover = Gtk.Popover()
+        self._filter_popover.set_child(scrolled)
+        self.filter_button.set_popover(self._filter_popover)
+        self._filter_popover.connect("show", self._on_filter_popover_show)
+        self.stack.connect("notify::visible-child-name",
+                           lambda *_: self._refresh_filter_button())
+
+    def _on_filter_popover_show(self, _popover) -> None:
+        self._ensure_filters_loaded()
+
+    def _ensure_filters_loaded(self) -> None:
+        name = self.stack.get_visible_child_name()
+        if name not in _FILTER_TABS or self.app.client is None:
+            self._rebuild_filter_popover()
+            return
+        if name in self._filters_cache:
+            self._rebuild_filter_popover()
+            return
+        if self._filters_loading:
+            return
+        self._filters_loading = True
+        item_type = _FILTER_ITEM_TYPES[name]
+
+        async def runme():
+            return await self.app.client.item_filters(item_type)
+
+        def done(future):
+            self._filters_loading = False
+            try:
+                options = future.result()
+            except Exception as e:
+                log.warning("library filters fetch failed: %s", e)
+                options = ([], [])
+                if self.app.show_toast:
+                    self.app.show_toast(_("Couldn't load filters."))
+            self._filters_cache[name] = options
+            GLib.idle_add(self._rebuild_filter_popover)
+
+        self.app.runner.submit(runme()).add_done_callback(done)
+        self._rebuild_filter_popover(loading=True)
+
+    def _rebuild_filter_popover(self, *, loading: bool = False) -> None:
+        for child in list(self._filter_box):
+            self._filter_box.remove(child)
+
+        name = self.stack.get_visible_child_name()
+        if name not in _FILTER_TABS:
+            return
+
+        if loading and name not in self._filters_cache:
+            self._filter_box.append(Gtk.Label(label=_("Loading…"), xalign=0))
+            return
+
+        genres, years = self._filters_cache.get(name, ([], []))
+        active_genre = self._tab_genres.get(name)
+        active_year = self._tab_years.get(name)
+
+        clear = Gtk.Button(label=_("Clear filters"))
+        clear.add_css_class("flat")
+        clear.set_sensitive(bool(active_genre or active_year is not None))
+        clear.connect("clicked", self._on_clear_filters)
+        self._filter_box.append(clear)
+
+        genre_label = Gtk.Label(label=_("Genre"), xalign=0)
+        genre_label.add_css_class("heading")
+        self._filter_box.append(genre_label)
+
+        for label, value in ((_("All genres"), None), *[(g, g) for g in genres]):
+            btn = Gtk.Button(label=label)
+            btn.add_css_class("flat")
+            if value == active_genre or (value is None and active_genre is None):
+                btn.add_css_class("suggested-action")
+            btn.connect("clicked", self._on_genre_clicked, value)
+            self._filter_box.append(btn)
+
+        if not genres and not loading:
+            hint = Gtk.Label(
+                label=_("No genres in your library — tag media in Jellyfin."),
+                xalign=0,
+                wrap=True,
+                wrap_mode=2,
+            )
+            hint.add_css_class("dim-label")
+            hint.add_css_class("caption")
+            self._filter_box.append(hint)
+
+        year_label = Gtk.Label(label=_("Year"), xalign=0)
+        year_label.add_css_class("heading")
+        self._filter_box.append(year_label)
+
+        year_grid = Gtk.Grid(column_spacing=4, row_spacing=4)
+        year_choices: list[tuple[str, int | None]] = [(_("All years"), None)]
+        year_choices.extend((str(y), y) for y in years)
+        cols = 4
+        for i, (label, value) in enumerate(year_choices):
+            btn = Gtk.Button(label=label)
+            btn.add_css_class("flat")
+            if value == active_year or (value is None and active_year is None):
+                btn.add_css_class("suggested-action")
+            btn.connect("clicked", self._on_year_clicked, value)
+            year_grid.attach(btn, i % cols, i // cols, 1, 1)
+        self._filter_box.append(year_grid)
+
+        if not years:
+            self._filter_box.append(Gtk.Label(
+                label=_("No release years available."),
+                xalign=0,
+            ))
+
+    def _on_clear_filters(self, _btn) -> None:
+        name = self.stack.get_visible_child_name()
+        if name not in _FILTER_TABS:
+            return
+        self._tab_genres[name] = None
+        self._tab_years[name] = None
+        self._apply_tab_filter(name)
+        self._loaded.add(name)
+        self._filter_popover.popdown()
+        self._rebuild_filter_popover()
+        self._refresh_filter_button()
+
+    def _on_genre_clicked(self, _btn, genre: str | None) -> None:
+        name = self.stack.get_visible_child_name()
+        if name not in _FILTER_TABS:
+            return
+        self._tab_genres[name] = genre
+        self._apply_tab_filter(name)
+        self._loaded.add(name)
+        self._rebuild_filter_popover()
+        self._refresh_filter_button()
+
+    def _on_year_clicked(self, _btn, year: int | None) -> None:
+        name = self.stack.get_visible_child_name()
+        if name not in _FILTER_TABS:
+            return
+        self._tab_years[name] = year
+        self._apply_tab_filter(name)
+        self._loaded.add(name)
+        self._rebuild_filter_popover()
+        self._refresh_filter_button()
+
+    def _refresh_filter_button(self) -> None:
+        name = self.stack.get_visible_child_name()
+        if name not in _FILTER_TABS:
+            self.filter_button.set_sensitive(False)
+            self.filter_button.remove_css_class("suggested-action")
+            self.filter_button.set_tooltip_text(_("Filter"))
+            return
+        self.filter_button.set_sensitive(True)
+        parts: list[str] = []
+        genre = self._tab_genres.get(name)
+        year = self._tab_years.get(name)
+        if genre:
+            parts.append(genre)
+        if year is not None:
+            parts.append(str(year))
+        if parts:
+            self.filter_button.add_css_class("suggested-action")
+            self.filter_button.set_tooltip_text(_("Filter: %s") % ", ".join(parts))
+        else:
+            self.filter_button.remove_css_class("suggested-action")
+            self.filter_button.set_tooltip_text(_("Filter"))
 
     # ------- sort -------
 
@@ -172,6 +361,12 @@ class LibraryPage(Adw.NavigationPage):
             kwargs["name_less_than"] = "A"
         elif letter:
             kwargs["name_starts_with"] = letter
+        genre = self._tab_genres.get(tab)
+        if genre:
+            kwargs["genres"] = genre
+        year = self._tab_years.get(tab)
+        if year is not None:
+            kwargs["years"] = year
         return kwargs
 
     def _apply_tab_filter(self, tab: str) -> None:

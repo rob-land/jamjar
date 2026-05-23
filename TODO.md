@@ -141,10 +141,9 @@ Track context menu **Add to Playlist** (pick existing or create new). Playlist
 page supports rename, delete, per-track remove, and drag-to-reorder (Jellyfin
 `POST …/Move/{index}`, `DELETE …/Items?entryIds=…`).
 
-### 9. Sort / filter on Library pages — partial
-Albums and Songs have a header sort popover (title, year, recently added /
-played, artist, shuffle). Letter jump still handles A–Z filtering. Genre /
-year filters remain open.
+### 9. Sort / filter on Library pages — done
+Albums and Songs: sort popover, A–Z letter jump, and genre/year filters
+(via Jellyfin `/Items/Filters` + `Genres` / `Years` query params on `/Items`).
 
 ### 10. Up-next preview on the bar — done
 Small popover from the bar showing the next 2–3 tracks. Cheap polish that

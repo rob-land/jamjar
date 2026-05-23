@@ -209,11 +209,33 @@ class JellyfinClient:
         )
         return [album_from_json(item) for item in data]
 
+    async def item_filters(self, include_item_types: str) -> tuple[list[str], list[int]]:
+        """Genres and years present in the library for the given item type."""
+        data = await self._get_json("/Items/Filters", params={
+            "userId":           self.user_id,
+            "IncludeItemTypes": include_item_types,
+            "Recursive":        "true",
+        })
+        genres: list[str] = []
+        for item in data.get("GenreItems") or []:
+            name = item.get("Name")
+            if name:
+                genres.append(name)
+        if not genres:
+            genres = [g for g in data.get("Genres") or [] if g]
+        years = sorted(
+            {int(y) for y in (data.get("Years") or []) if y is not None},
+            reverse=True,
+        )
+        return genres, years
+
     async def list_albums(self, start: int = 0, limit: int = 100,
                           sort_by: str = "SortName",
                           sort_order: str = "Ascending",
                           name_starts_with: str | None = None,
-                          name_less_than: str | None = None) -> list[Album]:
+                          name_less_than: str | None = None,
+                          genres: str | None = None,
+                          years: int | None = None) -> list[Album]:
         params: dict[str, Any] = {
             "userId":                 self.user_id,
             "IncludeItemTypes":       "MusicAlbum",
@@ -229,6 +251,10 @@ class JellyfinClient:
             params["NameStartsWith"] = name_starts_with
         if name_less_than:
             params["NameLessThan"] = name_less_than
+        if genres:
+            params["Genres"] = genres
+        if years is not None:
+            params["Years"] = years
         data = await self._get_json("/Items", params=params)
         return [album_from_json(item) for item in data.get("Items", [])]
 
@@ -270,7 +296,9 @@ class JellyfinClient:
     async def list_songs(self, start: int = 0, limit: int = 200,
                          sort_by: str = "SortName",
                          name_starts_with: str | None = None,
-                         name_less_than: str | None = None) -> list[Track]:
+                         name_less_than: str | None = None,
+                         genres: str | None = None,
+                         years: int | None = None) -> list[Track]:
         # MediaSources is intentionally omitted here: the songs list only needs
         # display fields. MediaSources is fetched on demand at play time
         # via get_item(), and is the heaviest field Jellyfin can return.
@@ -288,6 +316,10 @@ class JellyfinClient:
             params["NameStartsWith"] = name_starts_with
         if name_less_than:
             params["NameLessThan"] = name_less_than
+        if genres:
+            params["Genres"] = genres
+        if years is not None:
+            params["Years"] = years
         data = await self._get_json("/Items", params=params)
         return [track_from_json(item) for item in data.get("Items", [])]
 
