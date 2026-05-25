@@ -16,16 +16,24 @@ from .models import AuthResult
 log = logging.getLogger(__name__)
 
 
+_cached_device_name: str | None = None
+
+
 def device_name() -> str:
+    global _cached_device_name
+    if _cached_device_name is not None:
+        return _cached_device_name
     try:
         raw = socket.gethostname() or "Linux"
     except Exception:
-        return "Linux"
+        _cached_device_name = "Linux"
+        return _cached_device_name
     # Strip characters that would break the MediaBrowser header parser
     # (quotes, commas, equals). Keep it short to stay within reasonable
     # header limits.
     cleaned = "".join(c for c in raw if c.isalnum() or c in "-_.").strip()
-    return cleaned[:64] or "Linux"
+    _cached_device_name = cleaned[:64] or "Linux"
+    return _cached_device_name
 
 
 def new_device_id() -> str:

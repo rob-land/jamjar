@@ -26,6 +26,8 @@ class PlaylistPage(Adw.NavigationPage):
 
     rename_button         = Gtk.Template.Child()
     delete_button         = Gtk.Template.Child()
+    play_button           = Gtk.Template.Child()
+    shuffle_button        = Gtk.Template.Child()
     playlist_title_label  = Gtk.Template.Child()
     playlist_meta_label   = Gtk.Template.Child()
     playlist_tracks       = Gtk.Template.Child()
@@ -44,6 +46,8 @@ class PlaylistPage(Adw.NavigationPage):
 
         self.rename_button.connect("clicked", self._on_rename)
         self.delete_button.connect("clicked", self._on_delete)
+        self.play_button.connect("clicked", self._on_play)
+        self.shuffle_button.connect("clicked", self._on_shuffle)
         self._fav_handler = app.connect("favorite-changed", self._on_favorite_changed_external)
         self.connect("unrealize", self._on_unrealize)
 
@@ -200,6 +204,17 @@ class PlaylistPage(Adw.NavigationPage):
             return
         self.app.queue.replace(self.tracks, start_index=index)
         self.app.player.play(self.tracks[index])
+
+    def _on_play(self, _btn) -> None:
+        if self.tracks:
+            self._play_from(0)
+
+    def _on_shuffle(self, _btn) -> None:
+        if not self.tracks:
+            return
+        self.app.queue.shuffle = True
+        self.app.queue.replace(self.tracks, start_index=0)
+        self.app.player.play(self.app.queue.current)
 
     def _on_unrealize(self, _widget) -> None:
         self.app.disconnect(self._fav_handler)

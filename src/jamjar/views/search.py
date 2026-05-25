@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from gettext import gettext as _
 from typing import TYPE_CHECKING
 
 from gi.repository import Adw, Gdk, GLib, Gtk
@@ -73,6 +74,9 @@ class SearchPage(Adw.NavigationPage):
 
     def _show_empty(self) -> None:
         self._clear_rows()
+        self.empty_state.set_title(_("Type to search"))
+        self.empty_state.set_description(
+            _("Find tracks, albums, and artists in your library"))
         self.empty_state.set_visible(True)
         self.tracks_group.set_visible(False)
         self.albums_group.set_visible(False)
@@ -90,6 +94,15 @@ class SearchPage(Adw.NavigationPage):
         if seq != self._search_seq:
             return
         self._clear_rows()
+
+        if not hits:
+            self.empty_state.set_title(_("No results"))
+            self.empty_state.set_description(_("Try a different search term"))
+            self.empty_state.set_visible(True)
+            self.tracks_group.set_visible(False)
+            self.albums_group.set_visible(False)
+            self.artists_group.set_visible(False)
+            return
         self.empty_state.set_visible(False)
 
         any_tracks = any_albums = any_artists = False

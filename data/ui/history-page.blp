@@ -25,22 +25,30 @@ template $JamjarHistoryPage: Adw.NavigationPage {
     content: ScrolledWindow {
       hscrollbar-policy: never;
 
-      child: Box {
-        orientation: vertical;
+      child: Adw.Clamp {
+        maximum-size: 960;
 
-        Adw.StatusPage empty_state {
-          icon-name: "audio-x-generic-symbolic";
-          title: _("No play history");
-          description: _("Tracks you play will appear here.");
-          vexpand: true;
-        }
+        child: Box {
+          orientation: vertical;
 
-        ListBox history_list {
-          visible: false;
-          selection-mode: none;
+          Adw.StatusPage empty_state {
+            icon-name: "audio-x-generic-symbolic";
+            title: _("No play history");
+            description: _("Tracks you play will appear here.");
+            vexpand: true;
+          }
 
-          styles ["boxed-list"]
-        }
+          ListBox history_list {
+            visible: false;
+            selection-mode: none;
+            margin-start: 12;
+            margin-end: 12;
+            margin-top: 12;
+            margin-bottom: 12;
+
+            styles ["boxed-list"]
+          }
+        };
       };
     };
   };

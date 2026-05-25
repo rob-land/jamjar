@@ -66,6 +66,7 @@ async def fetch_lyrics(client: JellyfinClient, track: Track) -> Lyrics | None:
     url = client.lyrics_url(track)
     try:
         async with client.session.get(url, headers=client.headers) as r:
+            client._check_auth(r)
             if r.status == 404:
                 return None
             r.raise_for_status()

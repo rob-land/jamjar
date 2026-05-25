@@ -17,8 +17,6 @@ template $JamjarPlaylistPage: Adw.NavigationPage {
       Button delete_button {
         icon-name: "user-trash-symbolic";
         tooltip-text: _("Delete");
-
-        styles ["destructive-action"]
       }
     }
 
@@ -38,12 +36,36 @@ template $JamjarPlaylistPage: Adw.NavigationPage {
 
           Label playlist_title_label {
             xalign: 0;
+            wrap: true;
+            wrap-mode: word_char;
             styles ["title-1"]
           }
 
           Label playlist_meta_label {
             xalign: 0;
+            wrap: true;
             styles ["dim-label"]
+          }
+
+          Box {
+            spacing: 12;
+            margin-bottom: 6;
+
+            Button play_button {
+              label: _("Play");
+              icon-name: "media-playback-start-symbolic";
+              tooltip-text: _("Play playlist");
+
+              styles ["pill", "suggested-action"]
+            }
+
+            Button shuffle_button {
+              label: _("Shuffle");
+              icon-name: "media-playlist-shuffle-symbolic";
+              tooltip-text: _("Shuffle playlist");
+
+              styles ["pill"]
+            }
           }
 
           ListBox playlist_tracks {

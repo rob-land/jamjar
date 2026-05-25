@@ -51,7 +51,10 @@ class OfflineIndex:
     def insert(self, item_id: str, path: str, size: int) -> None:
         import time
         self._conn.execute(
-            "INSERT OR REPLACE INTO audio (item_id, path, size, added_at) VALUES (?, ?, ?, ?)",
+            """INSERT INTO audio (item_id, path, size, added_at)
+               VALUES (?, ?, ?, ?)
+               ON CONFLICT(item_id) DO UPDATE SET
+                   path=excluded.path, size=excluded.size, added_at=excluded.added_at""",
             (item_id, path, size, int(time.time())),
         )
         self._conn.commit()
@@ -127,11 +130,19 @@ class OfflineManager:
         target = self.cache_dir / f"{track.id}.audio"
         tmp = target.with_suffix(".part")
 
-        async with self.client.session.get(url, headers=self.client.headers) as r:
-            r.raise_for_status()
-            with open(tmp, "wb") as f:
-                async for chunk in r.content.iter_chunked(64 * 1024):
-                    f.write(chunk)
+        try:
+            async with self.client.session.get(url, headers=self.client.headers) as r:
+                self.client._check_auth(r)
+                r.raise_for_status()
+                with open(tmp, "wb") as f:
+                    async for chunk in r.content.iter_chunked(64 * 1024):
+                        f.write(chunk)
+        except Exception:
+            try:
+                tmp.unlink(missing_ok=True)
+            except OSError:
+                pass
+            raise
 
         os.replace(tmp, target)
         self.index.insert(track.id, str(target), target.stat().st_size)
