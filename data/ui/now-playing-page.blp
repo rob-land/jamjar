@@ -65,6 +65,10 @@ template $JamjarNowPlayingPage: Adw.NavigationPage {
                 height-request: 272;
                 halign: center;
 
+                accessibility {
+                  label: _("Album cover");
+                }
+
                 styles ["cover"]
               }
 
@@ -165,6 +169,10 @@ template $JamjarNowPlayingPage: Adw.NavigationPage {
               orientation: horizontal;
               draw-value: false;
               hexpand: true;
+
+              accessibility {
+                label: _("Playback position");
+              }
 
               adjustment: Adjustment {
                 lower: 0;

@@ -323,7 +323,6 @@ class PlaylistPage(Adw.NavigationPage):
 
     def _pop_after_delete(self) -> bool:
         nav = self.window.nav_view
-        pages = nav.get_pages()
-        if pages.get_n_items() > 1:
+        if nav.get_visible_page() is self:
             nav.pop()
         return False

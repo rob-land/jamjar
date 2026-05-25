@@ -114,7 +114,9 @@ class SleepTimer(GObject.Object):
         if progress >= 1.0:
             self.player.set_volume(0.0)
             self.player.pause()
-            self.player.set_volume(self._restored_volume)
+            vol = self._restored_volume
+            GLib.idle_add(lambda: (self.player.set_volume(vol), False)[1]
+                          if self.player else False)
             self._fade_source = None
             self.emit("remaining-changed", 0)
             return False

@@ -21,6 +21,10 @@ template $JamjarNowPlayingBar: Box {
       content-fit: cover;
       valign: center;
 
+      accessibility {
+        label: _("Album cover");
+      }
+
       styles ["cover"]
     }
 
@@ -61,6 +65,10 @@ template $JamjarNowPlayingBar: Box {
       hexpand: true;
       width-request: 160;
       valign: center;
+
+      accessibility {
+        label: _("Playback position");
+      }
 
       adjustment: Adjustment progress_adjustment {
         lower: 0;
