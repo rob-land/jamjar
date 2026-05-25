@@ -34,6 +34,8 @@ class QueuePage(Adw.NavigationPage):
         # Multiple rows may share an id (same track twice in the queue);
         # we keep them in a list per id.
         self._row_hearts: dict[str, list[Gtk.Image]] = {}
+        self._rows: list[Adw.ActionRow] = []
+        self._speaker_icons: dict[int, Gtk.Image] = {}
 
         self.sidebar_toggle.connect("clicked", lambda *_: self.window.toggle_sidebar())
 
@@ -47,6 +49,8 @@ class QueuePage(Adw.NavigationPage):
         for child in list(self.queue_list):
             self.queue_list.remove(child)
         self._row_hearts.clear()
+        self._rows.clear()
+        self._speaker_icons.clear()
 
         if self.app.queue is None or not self.app.queue.tracks:
             self.empty_state.set_visible(True)
@@ -63,13 +67,6 @@ class QueuePage(Adw.NavigationPage):
                 activatable=True,
             )
 
-            # Drag handle — a grab icon at the start of each row. The
-            # whole row could act as a DragSource, but pressing on the
-            # body of an ActionRow is a click-to-jump gesture; gating
-            # the drag on the handle icon keeps both interactions
-            # discoverable. The grab handle also signals to the user
-            # that the row is reorderable, which a context-menu-only
-            # affordance wouldn't.
             handle = Gtk.Image.new_from_icon_name("list-drag-handle-symbolic")
             handle.add_css_class("dim-label")
             handle.set_valign(Gtk.Align.CENTER)
@@ -85,6 +82,7 @@ class QueuePage(Adw.NavigationPage):
             if index == current_index:
                 speaker = Gtk.Image.new_from_icon_name("audio-volume-high-symbolic")
                 row.add_suffix(speaker)
+                self._speaker_icons[index] = speaker
 
             heart = favorite_heart(bool(track.user_data.get("IsFavorite")))
             row.add_suffix(heart)
@@ -106,6 +104,7 @@ class QueuePage(Adw.NavigationPage):
             install_track_menu(row, lambda t=track: t, self.app, self.window)
             self._install_drop_target(row, index)
             self.queue_list.append(row)
+            self._rows.append(row)
         return False
 
     # ------------------------------------------------------------------
@@ -156,8 +155,16 @@ class QueuePage(Adw.NavigationPage):
             heart.set_visible(is_favorite)
 
     def _refresh_current(self, *_args) -> None:
-        # Repaint to update the speaker indicator.
-        self._refresh()
+        if self.app.queue is None or not self._rows:
+            return
+        new_index = self.app.queue.index
+        for old_index, icon in list(self._speaker_icons.items()):
+            icon.get_parent().remove(icon)
+        self._speaker_icons.clear()
+        if 0 <= new_index < len(self._rows):
+            speaker = Gtk.Image.new_from_icon_name("audio-volume-high-symbolic")
+            self._rows[new_index].add_suffix(speaker)
+            self._speaker_icons[new_index] = speaker
 
     def _jump(self, index: int) -> None:
         if self.app.queue is None:

@@ -62,11 +62,13 @@
 
     <key name="max-bitrate-wifi" type="u">
       <default>0</default>
+      <range min="0" max="2304000"/>
       <summary>Max streaming bitrate (bps) on Wi-Fi; 0 = unlimited</summary>
     </key>
 
     <key name="max-bitrate-mobile" type="u">
       <default>128000</default>
+      <range min="32000" max="2304000"/>
       <summary>Max streaming bitrate (bps) on cellular</summary>
     </key>
 
@@ -93,6 +95,7 @@
 
     <key name="sleep-timer-default-minutes" type="u">
       <default>30</default>
+      <range min="0" max="240"/>
       <summary>Default sleep timer duration in minutes</summary>
     </key>
 
@@ -108,11 +111,13 @@
 
     <key name="window-width" type="i">
       <default>1100</default>
+      <range min="320" max="7680"/>
       <summary>Last window width</summary>
     </key>
 
     <key name="window-height" type="i">
       <default>720</default>
+      <range min="480" max="4320"/>
       <summary>Last window height</summary>
     </key>
 

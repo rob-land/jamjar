@@ -169,8 +169,8 @@ class PlayQueue(GObject.Object):
         if self._index <= 0:
             if self._repeat is RepeatMode.ALL and self._tracks:
                 self._index = len(self._tracks) - 1
-            else:
-                return self.current
+            # At queue start with repeat off: re-emit so the player
+            # restarts the current track from the beginning.
         else:
             self._index -= 1
         self.emit("current-changed", self.current)

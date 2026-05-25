@@ -63,7 +63,7 @@ class MprisService:
     async def _setup(self) -> None:
         from dbus_next.aio import MessageBus
         from dbus_next.constants import BusType, PropertyAccess
-        from dbus_next.service import ServiceInterface, dbus_property, method
+        from dbus_next.service import ServiceInterface, dbus_property, method, signal
         from dbus_next.signature import Variant
 
         player = self.player
@@ -152,11 +152,27 @@ class MprisService:
 
             @method()
             def Seek(self, offset: "x"):  # microseconds
-                on_main(lambda: player.seek(player.position + offset / 1_000_000))
+                def do_seek():
+                    player.seek(player.position + offset / 1_000_000)
+                    self._emit_seeked(int(player.position * 1_000_000))
+                on_main(do_seek)
 
             @method()
             def SetPosition(self, _track_id: "o", position: "x"):
-                on_main(lambda: player.seek(position / 1_000_000))
+                def do_seek():
+                    player.seek(position / 1_000_000)
+                    self._emit_seeked(position)
+                on_main(do_seek)
+
+            def _emit_seeked(self, position_us: int) -> None:
+                try:
+                    self.Seeked(position_us)
+                except Exception:
+                    pass
+
+            @signal()
+            def Seeked(self, position: "x") -> "x":
+                return position
 
             @dbus_property(access=PropertyAccess.READ)
             def PlaybackStatus(self) -> "s":

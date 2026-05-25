@@ -424,7 +424,7 @@ class NowPlayingPage(Adw.NavigationPage):
             app.queue.connect("notify::shuffle", lambda *_: self._sync_shuffle())
             app.queue.connect("notify::repeat",  lambda *_: self._sync_repeat())
             app.queue.connect("queue-changed",   self._refresh_queue_page)
-            app.queue.connect("current-changed", self._refresh_queue_page)
+            app.queue.connect("current-changed", self._update_queue_current)
 
         self.np_progress.connect("change-value", self._on_seek)
         self.np_shuffle.connect("toggled", self._on_shuffle_toggled)
@@ -543,6 +543,8 @@ class NowPlayingPage(Adw.NavigationPage):
         queue = self.app.queue
         for child in list(self.now_playing_queue_list):
             self.now_playing_queue_list.remove(child)
+        self._queue_rows: list[Adw.ActionRow] = []
+        self._queue_prefix_widgets: list[Gtk.Widget] = []
 
         if queue is None or not queue.tracks:
             self.queue_empty_label.set_visible(True)
@@ -558,21 +560,40 @@ class NowPlayingPage(Adw.NavigationPage):
                 subtitle=escape_markup(track.primary_artist),
                 activatable=True,
             )
-            if index == current_index:
-                icon = Gtk.Image.new_from_icon_name("audio-volume-high-symbolic")
-                icon.set_tooltip_text("Now playing")
-                row.add_prefix(icon)
-            else:
-                number = Gtk.Label(label=str(index + 1), width_chars=2)
-                number.add_css_class("dim-label")
-                number.add_css_class("numeric")
-                row.add_prefix(number)
+            prefix = self._make_queue_prefix(index, index == current_index)
+            row.add_prefix(prefix)
+            self._queue_prefix_widgets.append(prefix)
             duration = Gtk.Label(label=format_duration(track.duration_seconds))
             duration.add_css_class("dim-label")
             duration.add_css_class("numeric")
             row.add_suffix(duration)
             row.connect("activated", lambda _row, i=index: self._jump_to_queue_row(i))
             self.now_playing_queue_list.append(row)
+            self._queue_rows.append(row)
+
+    def _make_queue_prefix(self, index: int, is_current: bool) -> Gtk.Widget:
+        if is_current:
+            icon = Gtk.Image.new_from_icon_name("audio-volume-high-symbolic")
+            icon.set_tooltip_text("Now playing")
+            return icon
+        number = Gtk.Label(label=str(index + 1), width_chars=2)
+        number.add_css_class("dim-label")
+        number.add_css_class("numeric")
+        return number
+
+    def _update_queue_current(self, *_args) -> None:
+        queue = self.app.queue
+        if queue is None or not hasattr(self, "_queue_rows") or not self._queue_rows:
+            return
+        new_index = queue.index
+        for i, (row, old_prefix) in enumerate(
+            zip(self._queue_rows, self._queue_prefix_widgets)
+        ):
+            is_current = (i == new_index)
+            new_prefix = self._make_queue_prefix(i, is_current)
+            row.remove(old_prefix)
+            row.add_prefix(new_prefix)
+            self._queue_prefix_widgets[i] = new_prefix
 
     def _jump_to_queue_row(self, index: int) -> None:
         if self.app.queue is None:

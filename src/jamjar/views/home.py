@@ -34,6 +34,7 @@ class HomePage(Adw.NavigationPage):
         self.window = window
         self.sidebar_toggle.connect("clicked", lambda *_: self.window.toggle_sidebar())
         self.home_refresh.connect("clicked", self._on_refresh)
+        self._pending_repaints: dict[str, int] = {}
         GLib.idle_add(self._refresh)
 
     def _on_refresh(self, _btn) -> None:
@@ -56,13 +57,27 @@ class HomePage(Adw.NavigationPage):
         return False
 
     def _on_recently_added_changed(self, store, _pos, _removed, _added) -> None:
-        self._repaint_row(self.recently_added_row, store, self._tile_for_album)
+        self._schedule_repaint("added", self.recently_added_row, store,
+                               self._tile_for_album)
 
     def _on_recently_played_changed(self, store, _pos, _removed, _added) -> None:
-        self._repaint_row(self.recently_played_row, store, self._tile_for_track)
+        self._schedule_repaint("played", self.recently_played_row, store,
+                               self._tile_for_track)
 
     def _on_suggested_changed(self, store, _pos, _removed, _added) -> None:
-        self._repaint_row(self.suggested_row, store, self._tile_for_track)
+        self._schedule_repaint("suggested", self.suggested_row, store,
+                               self._tile_for_track)
+
+    def _schedule_repaint(self, key: str, row, store, tile_builder) -> None:
+        if key in self._pending_repaints:
+            GLib.source_remove(self._pending_repaints[key])
+
+        def do_repaint():
+            del self._pending_repaints[key]
+            self._repaint_row(row, store, tile_builder)
+            return False
+
+        self._pending_repaints[key] = GLib.idle_add(do_repaint)
 
     def _repaint_row(self, row: Gtk.Box, store, tile_builder) -> None:
         for child in list(row):

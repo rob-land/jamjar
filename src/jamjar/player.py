@@ -212,6 +212,10 @@ class Player(GObject.Object):
     def _on_about_to_finish(self, _playbin) -> None:
         # Runs on a GStreamer streaming thread — only touch the pipeline URI
         # here; queue/UI sync happens on the main thread when EOS lands.
+        # Reads of queue state (repeat, current, peek_next) are technically
+        # unsynchronized, but under CPython's GIL individual attribute reads
+        # are atomic. The worst case is reading a stale value; the GTK-thread
+        # _complete_gapless_transition corrects any mismatch.
         if self.queue.repeat == RepeatMode.ONE and self.queue.current:
             self._gapless_next = self.queue.current
             url = self.queue.client.stream_url(
