@@ -207,6 +207,8 @@ class LoginDialog(Adw.Dialog):
         if not username:
             return
         device_id = self.app.settings.get_string("device-id")
+        self.password_signin.set_sensitive(False)
+        self.password_error.set_visible(False)
 
         async def run():
             async with Authenticator(server.address, device_id) as auth:
@@ -216,9 +218,6 @@ class LoginDialog(Adw.Dialog):
             try:
                 result = future.result()
             except AuthError as e:
-                # `e` is scoped to the except block, so we have to
-                # capture its message before the GLib.idle_add lambda
-                # runs on the GTK loop.
                 msg = str(e)
                 GLib.idle_add(lambda: (self._show_error(msg), False)[1])
                 return
@@ -231,6 +230,7 @@ class LoginDialog(Adw.Dialog):
         self.app.runner.submit(run()).add_done_callback(done)
 
     def _show_error(self, message: str) -> None:
+        self.password_signin.set_sensitive(True)
         self.password_error.set_label(message)
         self.password_error.set_visible(True)
 

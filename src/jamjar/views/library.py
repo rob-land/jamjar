@@ -611,11 +611,8 @@ class LibraryPage(Adw.NavigationPage):
 
     def _wire_playlists(self) -> None:
         store = self.app.library.playlists
-        store.connect("items-changed", self._on_playlists_changed)
-        # Plain Gio.ListStore doesn't have a load-state signal. Default to
-        # "list" during the initial cold-load gap so the empty state isn't
-        # flashed; flip on the first items-changed (which lands even when
-        # the response is empty, since `_replace` always removes-all first).
+        self._playlists_repaint_source: int | None = None
+        store.connect("items-changed", self._schedule_playlists_repaint)
         self.playlists_stack.set_visible_child_name("list")
         store.connect("items-changed", self._refresh_playlists_stack)
 
@@ -634,7 +631,18 @@ class LibraryPage(Adw.NavigationPage):
         empty = store.get_n_items() == 0
         self.playlists_stack.set_visible_child_name("empty" if empty else "list")
 
-    def _on_playlists_changed(self, store, _pos, _removed, _added) -> None:
+    def _schedule_playlists_repaint(self, store, _pos, _removed, _added) -> None:
+        if self._playlists_repaint_source is not None:
+            GLib.source_remove(self._playlists_repaint_source)
+
+        def do_repaint():
+            self._playlists_repaint_source = None
+            self._repaint_playlists(store)
+            return False
+
+        self._playlists_repaint_source = GLib.idle_add(do_repaint)
+
+    def _repaint_playlists(self, store) -> None:
         for child in list(self.playlists_list):
             self.playlists_list.remove(child)
         for i in range(store.get_n_items()):
