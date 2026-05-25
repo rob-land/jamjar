@@ -93,6 +93,7 @@ class JamjarApplication(Adw.Application):
         """Called after a successful login or token restore."""
         self.client = client
         client.on_unauthorized = self._on_client_unauthorized
+        self.runner.submit(client.delete_expired_cache())
         self.library = Library(client, self.runner, on_error=self.show_toast)
         self.queue = PlayQueue(client)
         self.player = Player(self.queue)
@@ -131,6 +132,8 @@ class JamjarApplication(Adw.Application):
             self.player.close()
         if self.scrobbler:
             self.scrobbler.stop()
+        if self.mpris:
+            self.mpris.close()
         if self.client:
             client = self.client
 

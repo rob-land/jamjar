@@ -147,6 +147,12 @@ class JellyfinClient:
             await cache.clear()
             log.info("cleared HTTP response cache")
 
+    async def delete_expired_cache(self) -> None:
+        cache = getattr(self.session, "cache", None)
+        if cache is not None:
+            await cache.delete_expired_responses()
+            log.debug("pruned expired HTTP cache entries")
+
     async def _get_json(self, path: str, params: dict | None = None, *,
                         expire_after: timedelta | int | None = None,
                         refresh: bool = False) -> Any:

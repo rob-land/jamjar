@@ -30,8 +30,8 @@ def _load_resources() -> None:
         from . import const
         path = os.path.join(const.PKGDATADIR, "jamjar.gresource")
     except ImportError:
-        # Running uninstalled; fall back to ./build/data/ui/jamjar.gresource
-        guess = os.path.join(os.path.dirname(__file__), "..", "build", "data", "ui", "jamjar.gresource")
+        # Running uninstalled; fall back to <project-root>/build/data/ui/jamjar.gresource
+        guess = os.path.join(os.path.dirname(__file__), "..", "..", "build", "data", "ui", "jamjar.gresource")
         path = os.path.abspath(guess)
 
     if os.path.exists(path):

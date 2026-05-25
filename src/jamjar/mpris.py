@@ -56,9 +56,23 @@ class MprisService:
         fut.add_done_callback(_done)
 
         # Wire up player signals to MPRIS property changes
-        player.connect("track-changed",    self._on_track)
-        player.connect("state-changed",    self._on_state)
-        player.connect("position-changed", self._on_position)
+        self._track_handler = player.connect("track-changed", self._on_track)
+        self._state_handler = player.connect("state-changed", self._on_state)
+        self._pos_handler = player.connect("position-changed", self._on_position)
+
+    def close(self) -> None:
+        """Release the D-Bus name and disconnect signal handlers."""
+        self._available = False
+        self.player.disconnect(self._track_handler)
+        self.player.disconnect(self._state_handler)
+        self.player.disconnect(self._pos_handler)
+        if self._bus is not None:
+            self.runner.submit(self._close_bus())
+
+    async def _close_bus(self) -> None:
+        if self._bus is not None:
+            self._bus.disconnect()
+            self._bus = None
 
     async def _setup(self) -> None:
         from dbus_next.aio import MessageBus

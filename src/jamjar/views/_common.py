@@ -230,9 +230,13 @@ def _fit_to_request(pixbuf: GdkPixbuf.Pixbuf, picture: Gtk.Picture) -> GdkPixbuf
     if req_w <= 0 or req_h <= 0:
         return pixbuf
     target_w, target_h = req_w * 2, req_h * 2
-    if pixbuf.get_width() <= target_w and pixbuf.get_height() <= target_h:
+    pw, ph = pixbuf.get_width(), pixbuf.get_height()
+    if pw <= target_w and ph <= target_h:
         return pixbuf
-    return pixbuf.scale_simple(target_w, target_h, GdkPixbuf.InterpType.BILINEAR)
+    scale = min(target_w / pw, target_h / ph)
+    return pixbuf.scale_simple(
+        int(pw * scale), int(ph * scale), GdkPixbuf.InterpType.BILINEAR
+    )
 
 
 # ------- navigation helpers (clickable artist/album labels) -------
