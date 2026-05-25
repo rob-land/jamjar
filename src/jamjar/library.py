@@ -80,6 +80,7 @@ class WindowedListModel(GObject.Object, Gio.ListModel):
         # Extra kwargs forwarded to every fetcher call. Used by jump-to-letter
         # to constrain the listing to a name prefix.
         self._filter: dict = {}
+        self._fetcher_params = set(inspect.signature(fetcher).parameters)
         # Bumped on every reset; a fetch's apply() bails if the gen drifted
         # while the request was in flight. Without this, switching letters
         # quickly can let a previous-letter page land on top of the new
@@ -127,9 +128,8 @@ class WindowedListModel(GObject.Object, Gio.ListModel):
         limit = self.FIRST_PAGE_SIZE if start == 0 else self.PAGE_SIZE
 
         filter_kwargs = dict(self._filter)
-        # Artists/playlists fetchers ignore sort_*; drop keys they don't accept.
-        allowed = set(inspect.signature(self._fetcher).parameters)
-        fetch_kwargs = {k: v for k, v in filter_kwargs.items() if k in allowed}
+        fetch_kwargs = {k: v for k, v in filter_kwargs.items()
+                        if k in self._fetcher_params}
 
         async def runme():
             return await self._fetcher(start=start, limit=limit, **fetch_kwargs)
@@ -347,7 +347,13 @@ class Library(GObject.Object):
             return await self.client.album_tracks(album_id)
 
         def done(future):
-            tracks = future.result()
+            try:
+                tracks = future.result()
+            except Exception as e:
+                log.warning("album_tracks failed: %s", e)
+                if self._on_error:
+                    self._on_error(str(e))
+                return
             self._album_cache[album_id] = tracks
             GLib.idle_add(lambda: (callback(tracks), False)[1])
 
@@ -363,7 +369,13 @@ class Library(GObject.Object):
             return await self.client.artist_albums(artist_id)
 
         def done(future):
-            albums = future.result()
+            try:
+                albums = future.result()
+            except Exception as e:
+                log.warning("artist_albums failed: %s", e)
+                if self._on_error:
+                    self._on_error(str(e))
+                return
             self._artist_cache[artist_id] = albums
             GLib.idle_add(lambda: (callback(albums), False)[1])
 

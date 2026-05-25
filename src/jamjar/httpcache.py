@@ -21,15 +21,19 @@ RECENT_PLAY_TTL = timedelta(minutes=5)
 # Album tracks, item detail, artist discography, filter metadata.
 METADATA_TTL = timedelta(hours=24)
 
-# URL substrings that must never be cached (streams, scrobble, search, art).
+# URL patterns that must never be cached (streams, scrobble, search, art).
+# Patterns are matched with fnmatch against the full URL, so they need
+# wildcard prefixes to skip past the hostname.
+# Integer 0 is aiohttp-client-cache's DO_NOT_CACHE sentinel;
+# timedelta(seconds=0) would write entries with immediate expiry instead.
 _SKIP_CACHE_URLS = {
-    "Sessions":     timedelta(seconds=0),
-    "Search":       timedelta(seconds=0),
-    "InstantMix":   timedelta(seconds=0),
-    "Images":       timedelta(seconds=0),
-    "Audio":        timedelta(seconds=0),
-    "Lyrics":       timedelta(seconds=0),
-    "QuickConnect": timedelta(seconds=0),
+    "*/Sessions/*":     0,
+    "*/Search/*":       0,
+    "*/InstantMix*":    0,
+    "*/Images/*":       0,
+    "*/Audio/*":        0,
+    "*/Lyrics*":        0,
+    "*/QuickConnect/*": 0,
 }
 
 
@@ -45,7 +49,7 @@ def build_cache_backend() -> SQLiteBackend:
         expire_after=LIBRARY_LIST_TTL,
         allowed_methods=("GET",),
         allowed_codes=(200,),
-        include_headers=True,
+        include_headers=False,
         urls_expire_after=_SKIP_CACHE_URLS,
     )
 

@@ -29,3 +29,4 @@ src/jamjar/views/playlist.py
 src/jamjar/views/search.py
 src/jamjar/views/now_playing.py
 src/jamjar/views/prefs.py
+src/jamjar/views/add_to_playlist.py

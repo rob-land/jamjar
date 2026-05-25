@@ -43,7 +43,15 @@ class PreferencesDialog(Adw.PreferencesDialog):
         self.bitrate_mobile_row.connect("changed", self._on_bitrate_mobile)
 
     def _on_color_scheme(self, row, _ps) -> None:
-        self.settings.set_enum("color-scheme", row.get_selected())
+        selected = row.get_selected()
+        self.settings.set_enum("color-scheme", selected)
+        manager = Adw.StyleManager.get_default()
+        schemes = {
+            0: Adw.ColorScheme.DEFAULT,
+            1: Adw.ColorScheme.FORCE_LIGHT,
+            2: Adw.ColorScheme.FORCE_DARK,
+        }
+        manager.set_color_scheme(schemes.get(selected, Adw.ColorScheme.DEFAULT))
 
     def _on_sleep_timer(self, row) -> None:
         self.settings.set_uint("sleep-timer-default-minutes", int(row.get_value()))

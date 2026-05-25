@@ -249,11 +249,24 @@ class MprisService:
     def _emit_changed(self, *prop_names: str) -> None:
         if not self._available or self._player_iface is None:
             return
+        # Snapshot property values on the GTK thread (where player/queue
+        # state lives), then dispatch the D-Bus emit to the asyncio thread
+        # where dbus-next's bus connection runs.
         try:
-            for name in prop_names:
-                self._player_iface.emit_properties_changed({name: getattr(self._player_iface, name)})
+            changed = {name: getattr(self._player_iface, name)
+                       for name in prop_names}
         except Exception as e:
-            log.debug("emit_properties_changed failed: %s", e)
+            log.debug("MPRIS property read failed: %s", e)
+            return
+        iface = self._player_iface
+
+        def _do_emit():
+            try:
+                iface.emit_properties_changed(changed)
+            except Exception as e:
+                log.debug("emit_properties_changed failed: %s", e)
+
+        self.runner.loop.call_soon_threadsafe(_do_emit)
 
     def _on_track(self, _player, _track) -> None:
         self._emit_changed("Metadata", "CanGoNext", "CanGoPrevious", "CanPlay")

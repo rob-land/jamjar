@@ -82,11 +82,11 @@ async def discover_mdns(timeout: float = 3.0) -> list[Server]:
     async with AsyncZeroconf() as azc:
         zc = azc.zeroconf
 
-        def on_change(zeroconf, service_type, name, state_change):
+        async def on_change(zeroconf, service_type, name, state_change):
             from zeroconf import ServiceStateChange
             if state_change is not ServiceStateChange.Added:
                 return
-            info = zeroconf.get_service_info(service_type, name, timeout=1500)
+            info = await azc.async_get_service_info(service_type, name, timeout=1500)
             if not info or not info.addresses:
                 return
             addr = socket.inet_ntoa(info.addresses[0])
@@ -99,8 +99,9 @@ async def discover_mdns(timeout: float = 3.0) -> list[Server]:
                 source="mdns",
             )
 
-        AsyncServiceBrowser(zc, MDNS_SERVICE, handlers=[on_change])
+        browser = AsyncServiceBrowser(zc, MDNS_SERVICE, handlers=[on_change])
         await asyncio.sleep(timeout)
+        await browser.async_cancel()
 
     return list(found.values())
 

@@ -62,8 +62,12 @@ class LoginDialog(Adw.Dialog):
         self.password_switch_row.connect("activated", lambda *_: self._show_password())
         self.password_back.connect("clicked", lambda *_: self._show_quick_connect_and_retry())
         self.password_signin.connect("clicked", self._on_password_submit)
+        self.connect("closed", lambda *_: self._on_dialog_closed())
 
         GLib.idle_add(self._scan)
+
+    def _on_dialog_closed(self) -> None:
+        self._quick_cancelled = True
 
     # ------- discovery -------
 

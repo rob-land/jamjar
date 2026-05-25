@@ -148,7 +148,7 @@ class JellyfinClient:
             log.info("cleared HTTP response cache")
 
     async def _get_json(self, path: str, params: dict | None = None, *,
-                        expire_after: timedelta | None = None,
+                        expire_after: timedelta | int | None = None,
                         refresh: bool = False) -> Any:
         async with self.session.get(
             f"{self.base}{path}",
@@ -168,6 +168,8 @@ class JellyfinClient:
         ) as r:
             self._check_auth(r)
             r.raise_for_status()
+            if r.content_type and "json" in r.content_type:
+                return await r.json()
             if r.content_length:
                 return await r.json()
             return None
@@ -429,7 +431,7 @@ class JellyfinClient:
             "Limit":                  limit,
             "Fields":                 "MediaSources,AlbumPrimaryImageTag",
             "EnableTotalRecordCount": "false",
-        }, expire_after=timedelta(seconds=0))
+        }, expire_after=0)
         return [track_from_json(item) for item in data.get("Items", [])
                 if item.get("Type") == "Audio"]
 
@@ -439,7 +441,7 @@ class JellyfinClient:
             "searchTerm":       query,
             "IncludeItemTypes": "Audio,MusicAlbum,MusicArtist",
             "Limit":            limit,
-        }, expire_after=timedelta(seconds=0))
+        }, expire_after=0)
         return [search_hit_from_json(item) for item in data.get("SearchHints", [])]
 
     async def get_item(self, item_id: str) -> dict:

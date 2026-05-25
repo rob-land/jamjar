@@ -38,15 +38,26 @@ class Scrobbler(GObject.Object):
         self._is_paused: bool = False
         self._progress_source: int | None = None
 
-        player.connect("track-changed",    self._on_track_changed)
-        player.connect("state-changed",    self._on_state_changed)
-        player.connect("position-changed", self._on_position_changed)
+        self._track_handler = player.connect("track-changed", self._on_track_changed)
+        self._state_handler = player.connect("state-changed", self._on_state_changed)
+        self._pos_handler = player.connect("position-changed", self._on_position_changed)
+
+    def stop(self) -> None:
+        """Disconnect all signal handlers and stop the progress timer."""
+        self._stop_progress_timer()
+        if self._current:
+            self._send_stopped()
+            self._current = None
+        self.player.disconnect(self._track_handler)
+        self.player.disconnect(self._state_handler)
+        self.player.disconnect(self._pos_handler)
 
     # ------- handlers -------
 
     def _on_track_changed(self, _player, track: Track | None) -> None:
         if self._current and self._current.id != (track.id if track else None):
-            self._send_stopped()
+            old_position = self._position_seconds
+            self._send_stopped(position_seconds=old_position)
         self._current = track
         if track is not None:
             self._send_playing(track)
@@ -91,6 +102,7 @@ class Scrobbler(GObject.Object):
 
     def _tick_progress(self) -> bool:
         if self._current is None:
+            self._progress_source = None
             return False
         self._send_progress()
         return True
@@ -123,7 +135,10 @@ class Scrobbler(GObject.Object):
             return
         self.runner.submit(self.client.report_progress(self._base_body()))
 
-    def _send_stopped(self) -> None:
+    def _send_stopped(self, *, position_seconds: float | None = None) -> None:
         if self._current is None:
             return
-        self.runner.submit(self.client.report_stopped(self._base_body()))
+        body = self._base_body()
+        if position_seconds is not None:
+            body["PositionTicks"] = self._ticks(position_seconds)
+        self.runner.submit(self.client.report_stopped(body))

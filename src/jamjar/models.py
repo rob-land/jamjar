@@ -111,8 +111,11 @@ def track_from_json(item: dict) -> Track:
 
 def album_from_json(item: dict) -> Album:
     image_tags = item.get("ImageTags") or {}
-    artists = tuple(a.get("Name", "") for a in item.get("AlbumArtists", [])) or \
-              tuple(item.get("AlbumArtist", "").split(",")) if item.get("AlbumArtist") else tuple()
+    artists = (
+        tuple(a.get("Name", "") for a in item.get("AlbumArtists", []))
+        or (tuple(s.strip() for s in item["AlbumArtist"].split(","))
+            if item.get("AlbumArtist") else ())
+    )
     artist_ids = tuple(a.get("Id", "") for a in item.get("AlbumArtists", []))
     return Album(
         id=item["Id"],

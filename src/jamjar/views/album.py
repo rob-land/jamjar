@@ -71,7 +71,8 @@ class AlbumPage(Adw.NavigationPage):
         self._suppress_favorite = False
         self._sync_favorite(bool(album.user_data.get("IsFavorite")))
         self.favorite_button.connect("toggled", self._on_favorite_toggled)
-        app.connect("favorite-changed", self._on_favorite_changed_external)
+        self._fav_handler = app.connect("favorite-changed", self._on_favorite_changed_external)
+        self.connect("unrealize", self._on_unrealize)
 
         app.library.album_tracks(album.id, self._on_tracks_loaded)
 
@@ -114,6 +115,9 @@ class AlbumPage(Adw.NavigationPage):
             row.connect("activated", lambda _r, i=index: self._play_from(i))
             install_track_menu(row, lambda t=track: t, self.app, self.window)
             self.tracks_list.append(row)
+
+    def _on_unrealize(self, _widget) -> None:
+        self.app.disconnect(self._fav_handler)
 
     def _on_favorite_changed_external(self, _app, item_id: str, is_favorite: bool) -> None:
         # Sync album-header heart if this is the album.

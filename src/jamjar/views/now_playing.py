@@ -268,12 +268,10 @@ class NowPlayingBar(Gtk.Box):
         icon, tip = REPEAT_ICONS[mode]
         self.repeat_button.set_icon_name(icon)
         self.repeat_button.set_tooltip_text(tip)
-        # Use a CSS class for visual on-state when not OFF
-        ctx = self.repeat_button.get_style_context()
         if mode == RepeatMode.OFF:
-            ctx.remove_class("accent")
+            self.repeat_button.remove_css_class("accent")
         else:
-            ctx.add_class("accent")
+            self.repeat_button.add_css_class("accent")
 
     # ------- up next -------
 
@@ -509,7 +507,7 @@ class NowPlayingPage(Adw.NavigationPage):
         self.np_play.set_icon_name(icon)
 
     def _on_seek(self, _scale, _scroll, value: float) -> bool:
-        if self._suppress_seek:
+        if self._suppress_seek or not self.app.player:
             return False
         self.app.player.seek(value)
         return False
@@ -715,8 +713,7 @@ class NowPlayingPage(Adw.NavigationPage):
         icon, tip = REPEAT_ICONS[mode]
         self.np_repeat.set_icon_name(icon)
         self.np_repeat.set_tooltip_text(tip)
-        ctx = self.np_repeat.get_style_context()
         if mode == RepeatMode.OFF:
-            ctx.remove_class("accent")
+            self.np_repeat.remove_css_class("accent")
         else:
-            ctx.add_class("accent")
+            self.np_repeat.add_css_class("accent")

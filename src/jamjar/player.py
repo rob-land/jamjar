@@ -68,7 +68,7 @@ class Player(GObject.Object):
         # Set in about-to-finish when the next URI is queued; consumed on EOS.
         self._gapless_next: Track | None = None
         self._last_previous_at = 0.0
-        self._tick_source = GLib.timeout_add(500, self._tick)
+        self._tick_source: int | None = None
 
     # ------- public API -------
 
@@ -160,8 +160,7 @@ class Player(GObject.Object):
             self.seek(0.0)
             return
 
-        if self.queue.previous() is not None:
-            self.play(self.queue.current)
+        self.queue.previous()
 
     def seek(self, seconds: float) -> None:
         ns = int(max(0.0, seconds) * Gst.SECOND)
@@ -275,6 +274,11 @@ class Player(GObject.Object):
             return
         old, new, _pending = msg.parse_state_changed()
         self._state = new
+        if new == Gst.State.PLAYING and self._tick_source is None:
+            self._tick_source = GLib.timeout_add(500, self._tick)
+        elif new != Gst.State.PLAYING and self._tick_source is not None:
+            GLib.source_remove(self._tick_source)
+            self._tick_source = None
         names = {Gst.State.NULL: "stopped", Gst.State.READY: "ready",
                  Gst.State.PAUSED: "paused", Gst.State.PLAYING: "playing"}
         if new in names:

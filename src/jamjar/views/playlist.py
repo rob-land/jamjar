@@ -44,7 +44,8 @@ class PlaylistPage(Adw.NavigationPage):
 
         self.rename_button.connect("clicked", self._on_rename)
         self.delete_button.connect("clicked", self._on_delete)
-        app.connect("favorite-changed", self._on_favorite_changed_external)
+        self._fav_handler = app.connect("favorite-changed", self._on_favorite_changed_external)
+        self.connect("unrealize", self._on_unrealize)
 
         app.runner.submit(self._load())
 
@@ -200,6 +201,9 @@ class PlaylistPage(Adw.NavigationPage):
         self.app.queue.replace(self.tracks, start_index=index)
         self.app.player.play(self.tracks[index])
 
+    def _on_unrealize(self, _widget) -> None:
+        self.app.disconnect(self._fav_handler)
+
     def _on_favorite_changed_external(self, _app, item_id: str,
                                     is_favorite: bool) -> None:
         for heart in self._row_hearts.get(item_id, ()):
@@ -264,7 +268,7 @@ class PlaylistPage(Adw.NavigationPage):
     def _on_delete(self, _btn) -> None:
         dialog = Adw.AlertDialog(
             heading=_("Delete playlist?"),
-            body=_('Delete “%s”? This cannot be undone.') % self.playlist.name,
+            body=_('Delete “%s”? This cannot be undone.') % GLib.markup_escape_text(self.playlist.name),
         )
         dialog.add_response("cancel", _("_Cancel"))
         dialog.add_response("delete", _("_Delete"))

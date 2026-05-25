@@ -55,6 +55,8 @@ class JamjarApplication(Adw.Application):
         self.mpris: MprisService | None = None
         self.sleep_timer = SleepTimer()
         self._holding = False
+        self._settings_handler: int | None = None
+        self._player_state_handler: int | None = None
         # Per-message dedup so a wave of related failures (e.g. losing
         # network mid-prefetch) doesn't stack four toasts on the user.
         self._last_toast_message: str = ""
@@ -103,7 +105,8 @@ class JamjarApplication(Adw.Application):
             volume=self.settings.get_double("volume"),
             replaygain=self.settings.get_boolean("replaygain"),
         )
-        self.settings.connect("changed::replaygain", self._on_replaygain_changed)
+        self._settings_handler = self.settings.connect(
+            "changed::replaygain", self._on_replaygain_changed)
 
         win = self.props.active_window
         self.mpris = MprisService(
@@ -112,14 +115,22 @@ class JamjarApplication(Adw.Application):
             on_raise=lambda: GLib.idle_add(lambda: (win.present(), False)[1]) if win else None,
         )
 
-        self.player.connect("state-changed", self._on_player_state)
+        self._player_state_handler = self.player.connect("state-changed", self._on_player_state)
         self.sleep_timer.attach(self.player)
         self._update_session_actions()
 
     def detach_session(self) -> None:
         self.sleep_timer.detach()
+        if self._settings_handler is not None:
+            self.settings.disconnect(self._settings_handler)
+            self._settings_handler = None
         if self.player:
+            if self._player_state_handler is not None:
+                self.player.disconnect(self._player_state_handler)
+                self._player_state_handler = None
             self.player.close()
+        if self.scrobbler:
+            self.scrobbler.stop()
         if self.client:
             client = self.client
 

@@ -74,9 +74,12 @@ def commit_favorite(client, item, new_state: bool, runner,
             if on_failure is not None:
                 GLib.idle_add(lambda: (on_failure(), False)[1])
             return
-        item.user_data["IsFavorite"] = new_state
-        if app is not None:
-            app.emit_favorite_changed(item.id, new_state)
+        def _apply():
+            item.user_data["IsFavorite"] = new_state
+            if app is not None:
+                app.emit_favorite_changed(item.id, new_state)
+            return False
+        GLib.idle_add(_apply)
 
     runner.submit(runme()).add_done_callback(done)
 
