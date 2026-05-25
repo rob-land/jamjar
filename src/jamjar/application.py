@@ -229,7 +229,8 @@ class JamjarApplication(Adw.Application):
     # Actions whose enabled state depends on whether a Jellyfin session
     # is currently attached.
     SESSION_ACTIONS = ("logout", "switch-server", "search",
-                       "toggle", "next", "previous", "sleep-timer")
+                       "toggle", "next", "previous", "sleep-timer",
+                       "volume-up", "volume-down")
 
     def _install_actions(self) -> None:
         actions: list[tuple[str, callable]] = [
@@ -248,9 +249,11 @@ class JamjarApplication(Adw.Application):
 
         # Player actions live on the application so accelerators work everywhere
         for name, fn in (
-            ("toggle",   lambda *_: self.player and self.player.toggle()),
-            ("next",     lambda *_: self.player and self.player.next()),
-            ("previous", lambda *_: self.player and self.player.previous()),
+            ("toggle",      lambda *_: self.player and self.player.toggle()),
+            ("next",        lambda *_: self.player and self.player.next()),
+            ("previous",    lambda *_: self.player and self.player.previous()),
+            ("volume-up",   lambda *_: self._adjust_volume(0.05)),
+            ("volume-down", lambda *_: self._adjust_volume(-0.05)),
         ):
             action = Gio.SimpleAction.new(name, None)
             action.connect("activate", fn)
@@ -271,12 +274,21 @@ class JamjarApplication(Adw.Application):
         self.set_accels_for_action("app.next",        ["<Primary>Right"])
         self.set_accels_for_action("app.previous",    ["<Primary>Left"])
         self.set_accels_for_action("app.preferences", ["<Primary>comma"])
+        self.set_accels_for_action("app.volume-up",   ["<Primary>Up"])
+        self.set_accels_for_action("app.volume-down", ["<Primary>Down"])
         self.set_accels_for_action("win.show-help-overlay",
                                    ["<Primary>question"])
         # Bare space is bound at the window level, not as an app accel, so
         # text entries (search, etc.) can still receive space characters.
 
     # ------- side-effects from player state -------
+
+    def _adjust_volume(self, delta: float) -> None:
+        if self.player is None:
+            return
+        new = max(0.0, min(1.0, self.player.volume + delta))
+        self.player.set_volume(new)
+        self.settings.set_double("volume", new)
 
     def _on_replaygain_changed(self, settings, _key) -> None:
         if self.player is not None:
