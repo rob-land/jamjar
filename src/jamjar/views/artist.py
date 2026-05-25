@@ -29,6 +29,7 @@ class ArtistPage(Adw.NavigationPage):
     artist_meta_label   = Gtk.Template.Child()
     artist_radio_button = Gtk.Template.Child()
     favorite_button     = Gtk.Template.Child()
+    albums_spinner      = Gtk.Template.Child()
     artist_albums_grid  = Gtk.Template.Child()
 
     def __init__(self, app: JamjarApplication, window: JamjarWindow, artist) -> None:
@@ -66,6 +67,8 @@ class ArtistPage(Adw.NavigationPage):
 
     def _on_albums_loaded(self, albums: list) -> None:
         from ..library import _Wrapper
+        self.albums_spinner.set_visible(False)
+        self.artist_albums_grid.set_visible(True)
         self.store.remove_all()
         for album in albums:
             self.store.append(_Wrapper(album))

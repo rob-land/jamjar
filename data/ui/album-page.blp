@@ -115,7 +115,17 @@ template $JamjarAlbumPage: Adw.NavigationPage {
             }
           }
 
+          Spinner tracks_spinner {
+            spinning: true;
+            halign: center;
+            margin-top: 24;
+            margin-bottom: 24;
+            width-request: 32;
+            height-request: 32;
+          }
+
           ListBox tracks_list {
+            visible: false;
             styles ["boxed-list"]
             selection-mode: none;
           }

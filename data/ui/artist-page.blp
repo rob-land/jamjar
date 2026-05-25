@@ -104,7 +104,17 @@ template $JamjarArtistPage: Adw.NavigationPage {
             styles ["heading"]
           }
 
+          Spinner albums_spinner {
+            spinning: true;
+            halign: center;
+            margin-top: 24;
+            margin-bottom: 24;
+            width-request: 32;
+            height-request: 32;
+          }
+
           GridView artist_albums_grid {
+            visible: false;
             min-columns: 2;
             max-columns: 8;
             single-click-activate: true;

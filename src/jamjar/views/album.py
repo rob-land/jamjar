@@ -34,6 +34,7 @@ class AlbumPage(Adw.NavigationPage):
     play_button         = Gtk.Template.Child()
     shuffle_button      = Gtk.Template.Child()
     favorite_button     = Gtk.Template.Child()
+    tracks_spinner      = Gtk.Template.Child()
     tracks_list         = Gtk.Template.Child()
 
     def __init__(self, app: JamjarApplication, window: JamjarWindow, album) -> None:
@@ -93,6 +94,8 @@ class AlbumPage(Adw.NavigationPage):
 
     def _on_tracks_loaded(self, tracks: list) -> None:
         self.tracks = tracks
+        self.tracks_spinner.set_visible(False)
+        self.tracks_list.set_visible(True)
         for child in list(self.tracks_list):
             self.tracks_list.remove(child)
         self._row_hearts.clear()
