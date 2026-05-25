@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import logging
+import threading
 
-from gi.repository import GLib, Secret
+from gi.repository import Gio, GLib, Secret
 
 log = logging.getLogger(__name__)
 
@@ -17,30 +18,53 @@ SCHEMA = Secret.Schema.new(
     },
 )
 
+_TIMEOUT = 5
+
+
+def _cancellable_with_timeout():
+    """Return a GCancellable that auto-cancels after _TIMEOUT seconds."""
+    cancel = Gio.Cancellable()
+    timer = threading.Timer(_TIMEOUT, cancel.cancel)
+    timer.daemon = True
+    timer.start()
+    return cancel, timer
+
 
 def store_token(server_id: str, user_id: str, token: str) -> None:
     """Store a Jellyfin access token in the default keyring."""
     attrs = {"server_id": server_id, "user_id": user_id}
     label = f"Jamjar token for {user_id}@{server_id}"
-    Secret.password_store_sync(
-        SCHEMA, attrs,
-        Secret.COLLECTION_DEFAULT,
-        label, token, None,
-    )
+    cancel, timer = _cancellable_with_timeout()
+    try:
+        Secret.password_store_sync(
+            SCHEMA, attrs,
+            Secret.COLLECTION_DEFAULT,
+            label, token, cancel,
+        )
+    except GLib.Error as e:
+        log.warning("libsecret store failed: %s", e.message)
+    finally:
+        timer.cancel()
 
 
 def lookup_token(server_id: str, user_id: str) -> str | None:
     attrs = {"server_id": server_id, "user_id": user_id}
+    cancel, timer = _cancellable_with_timeout()
     try:
-        return Secret.password_lookup_sync(SCHEMA, attrs, None)
+        return Secret.password_lookup_sync(SCHEMA, attrs, cancel)
     except GLib.Error as e:
         log.warning("libsecret lookup failed: %s", e.message)
         return None
+    finally:
+        timer.cancel()
 
 
 def clear_token(server_id: str, user_id: str) -> None:
     attrs = {"server_id": server_id, "user_id": user_id}
+    cancel, timer = _cancellable_with_timeout()
     try:
-        Secret.password_clear_sync(SCHEMA, attrs, None)
+        Secret.password_clear_sync(SCHEMA, attrs, cancel)
     except GLib.Error as e:
         log.warning("libsecret clear failed: %s", e.message)
+    finally:
+        timer.cancel()
