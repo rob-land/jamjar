@@ -70,6 +70,13 @@ class JamjarWindow(Adw.ApplicationWindow):
         clear_action.connect("activate", lambda *_: self.app.queue and self.app.queue.clear())
         self.add_action(clear_action)
 
+        # Suite-standard window action: any child widget can fire a
+        # toast via widget.activate_action("win.toast", GLib.Variant("s", msg)).
+        toast_action = Gio.SimpleAction.new("toast", GLib.VariantType.new("s"))
+        toast_action.connect("activate",
+            lambda _a, p: self.toast_overlay.add_toast(Adw.Toast.new(p.get_string())))
+        self.add_action(toast_action)
+
         # Restore window size
         s = self.app.settings
         self.set_default_size(s.get_int("window-width"), s.get_int("window-height"))

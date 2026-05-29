@@ -187,11 +187,11 @@ class JamjarApplication(Adw.Application):
             self._last_toast_message = message
             self._last_toast_at = now
             win = self.props.active_window
-            if win is None or not hasattr(win, "toast_overlay"):
+            if win is None:
                 return False
-            toast = Adw.Toast.new(message)
-            toast.set_timeout(timeout)
-            win.toast_overlay.add_toast(toast)
+            # Fire the suite-standard win.toast(s) action so the window
+            # owns the routing decision (Adw.Toast styling, dedupe, etc.).
+            win.activate_action("toast", GLib.Variant("s", message))
             return False
 
         GLib.idle_add(emit)
@@ -219,10 +219,8 @@ class JamjarApplication(Adw.Application):
         win = self.props.active_window
         if win is None:
             return False
-        if hasattr(win, "toast_overlay"):
-            toast = Adw.Toast.new("Session expired — please sign in again")
-            toast.set_timeout(4)
-            win.toast_overlay.add_toast(toast)
+        win.activate_action("toast",
+            GLib.Variant("s", "Session expired — please sign in again"))
         if hasattr(win, "show_login"):
             win.show_login()
         return False
