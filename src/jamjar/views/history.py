@@ -7,7 +7,8 @@ from typing import TYPE_CHECKING
 
 from gi.repository import Adw, GLib, Gtk
 
-from ._common import escape_markup, format_duration, install_track_menu
+from ._common import escape_markup, format_duration
+from .track_menu import install_track_menu
 if TYPE_CHECKING:
     from ..application import JamjarApplication
     from ..window import JamjarWindow
