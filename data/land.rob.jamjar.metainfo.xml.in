@@ -29,9 +29,9 @@
 
   <content_rating type="oars-1.1" />
 
-  <url type="homepage">https://codeberg.org/robland/jamjar</url>
-  <url type="bugtracker">https://codeberg.org/robland/jamjar/issues</url>
-  <url type="vcs-browser">https://codeberg.org/robland/jamjar</url>
+  <url type="homepage">https://github.com/rob-land/jamjar</url>
+  <url type="bugtracker">https://github.com/rob-land/jamjar/issues</url>
+  <url type="vcs-browser">https://github.com/rob-land/jamjar</url>
 
   <branding>
     <color type="primary" scheme_preference="light">#f5b76a</color>
@@ -41,11 +41,11 @@
   <screenshots>
     <screenshot type="default">
       <caption>Album view</caption>
-      <image>https://codeberg.org/robland/jamjar/raw/branch/main/data/screenshots/album-page.png</image>
+      <image>https://raw.githubusercontent.com/rob-land/jamjar/main/data/screenshots/album-page.png</image>
     </screenshot>
     <screenshot>
       <caption>Home page with Recently Added</caption>
-      <image>https://codeberg.org/robland/jamjar/raw/branch/main/data/screenshots/home-page.png</image>
+      <image>https://raw.githubusercontent.com/rob-land/jamjar/main/data/screenshots/home-page.png</image>
     </screenshot>
   </screenshots>
 
