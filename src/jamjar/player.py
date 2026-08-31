@@ -119,6 +119,7 @@ class Player(GObject.Object):
             deck.bus.connect("message::eos",           self._on_eos, deck)
             deck.bus.connect("message::error",         self._on_error, deck)
             deck.bus.connect("message::state-changed", self._on_state, deck)
+            deck.bus.connect("message::async-done",     self._on_async_done, deck)
             # about-to-finish is a signal on playbin, not a bus message
             deck.pipeline.connect("about-to-finish", self._on_about_to_finish, deck)
 
@@ -140,6 +141,8 @@ class Player(GObject.Object):
         self._crossfade_out: _Deck | None = None
         self._crossfade_step = 0
         self._crossfade_steps = 1
+        # Seek to apply once a preloaded (restored) track has prerolled.
+        self._pending_seek: float = 0.0
 
     # ------- deck helpers -------
 
@@ -249,6 +252,7 @@ class Player(GObject.Object):
         )
         log.debug("playing %s -> %s", track.id, url)
         self._gapless_next = None
+        self._pending_seek = 0.0
         deck = self._deck
         self._cancel_ramp(deck)
         deck.pipeline.set_state(Gst.State.NULL)
@@ -260,6 +264,43 @@ class Player(GObject.Object):
         deck.pipeline.set_state(Gst.State.PLAYING)
         self._ramp_gain(deck, 1.0, RESUME_FADE_MS)
         self._notify_track_started(track)
+
+    def prepare(self, track: Track, position: float = 0.0) -> None:
+        """Load `track` paused at `position` without starting playback.
+
+        Used to restore the queue at startup: the bar and Now Playing
+        page show what you were listening to, and pressing play picks up
+        where you left off.
+        """
+        self._abort_crossfade()
+        deck = self._deck
+        self._cancel_ramp(deck)
+        deck.pipeline.set_state(Gst.State.NULL)
+        deck.pipeline.set_property(
+            "uri", self.queue.client.stream_url(
+                track, codec=self._codec, max_bitrate=self._max_bitrate))
+        deck.gain = 1.0
+        self._apply_gain(deck)
+        self._gapless_next = None
+        # A seek only sticks once the pipeline has prerolled, which is
+        # what async-done announces.
+        self._pending_seek = max(0.0, position)
+        deck.pipeline.set_state(Gst.State.PAUSED)
+        self._notify_track_started(track)
+        if self._pending_seek:
+            self.emit("position-changed", self._pending_seek)
+
+    def _on_async_done(self, _bus, _msg, deck: _Deck) -> None:
+        if self._pending_seek <= 0 or deck is not self._deck:
+            return
+        position = self._pending_seek
+        self._pending_seek = 0.0
+        deck.pipeline.seek_simple(
+            Gst.Format.TIME,
+            Gst.SeekFlags.FLUSH | Gst.SeekFlags.ACCURATE,
+            int(position * Gst.SECOND),
+        )
+        self.emit("position-changed", position)
 
     def pause(self) -> None:
         self._abort_crossfade()
@@ -292,6 +333,7 @@ class Player(GObject.Object):
     def stop(self) -> None:
         self._abort_crossfade()
         self._gapless_next = None
+        self._pending_seek = 0.0
         for deck in self._decks:
             self._cancel_ramp(deck)
             deck.pipeline.set_state(Gst.State.NULL)

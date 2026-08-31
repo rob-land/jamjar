@@ -129,3 +129,52 @@ def test_move_to_same_position_is_noop():
     q.move(1, 1)
     assert [t.id for t in q.tracks] == ["a", "b", "c"]
     assert q.index == 1
+
+
+# --- restore ------------------------------------------------------------
+#
+# Restoring a saved queue must not look like "the user pressed play":
+# the player turns `current-changed` into playback, so an app that
+# emitted it at startup would begin blasting music on launch.
+
+def test_restore_does_not_emit_current_changed():
+    q = PlayQueue(client=None)
+    fired = []
+    q.connect("current-changed", lambda _q, t: fired.append(t))
+    q.restore([_t("a"), _t("b")], 1)
+    assert fired == []
+
+
+def test_restore_sets_the_play_head():
+    q = PlayQueue(client=None)
+    q.restore([_t("a"), _t("b"), _t("c")], 2)
+    assert q.index == 2
+    assert q.current.id == "c"
+
+
+def test_restore_announces_the_new_queue():
+    q = PlayQueue(client=None)
+    changed = []
+    q.connect("queue-changed", lambda _q: changed.append(True))
+    q.restore([_t("a")], 0)
+    assert changed == [True]
+
+
+def test_restore_clamps_an_out_of_range_index():
+    q = PlayQueue(client=None)
+    q.restore([_t("a"), _t("b")], 99)
+    assert q.index == 0
+
+
+def test_restore_of_an_empty_queue_leaves_no_current():
+    q = PlayQueue(client=None)
+    q.restore([], 3)
+    assert q.index == -1
+    assert q.current is None
+
+
+def test_restore_clears_a_stale_radio_origin():
+    q = PlayQueue(client=None)
+    q.replace([_t("a")], origin="radio:decade:1980")
+    q.restore([_t("b")], 0)
+    assert q.origin is None

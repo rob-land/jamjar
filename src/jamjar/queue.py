@@ -93,6 +93,19 @@ class PlayQueue(GObject.Object):
         self.emit("queue-changed")
         self.emit("current-changed", self.current)
 
+    def restore(self, tracks: list[Track], index: int) -> None:
+        """Reinstate a saved queue without starting playback.
+
+        Deliberately does not emit `current-changed`: the player turns
+        that into `play()`, and an app that starts blasting music the
+        moment it opens is a bug, not a feature. The window shows the
+        restored track because the player preloads it paused.
+        """
+        self._tracks = list(tracks)
+        self._index = index if 0 <= index < len(tracks) else (-1 if not tracks else 0)
+        self.origin = None
+        self.emit("queue-changed")
+
     def append(self, tracks: list[Track]) -> None:
         if not tracks:
             return

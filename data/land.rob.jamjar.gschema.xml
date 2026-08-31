@@ -93,6 +93,26 @@
       <summary>Apply ReplayGain when tags are present</summary>
     </key>
 
+    <key name="queue-track-ids" type="as">
+      <default>[]</default>
+      <summary>Item ids of the last play queue</summary>
+      <description>
+        Restored at startup so closing the app doesn't lose your place.
+        Ids only — the metadata is re-fetched from the server.
+      </description>
+    </key>
+
+    <key name="queue-index" type="i">
+      <default>-1</default>
+      <range min="-1" max="100000"/>
+      <summary>Play head within the restored queue</summary>
+    </key>
+
+    <key name="queue-position" type="d">
+      <default>0.0</default>
+      <summary>Position in seconds within the restored track</summary>
+    </key>
+
     <key name="crossfade-seconds" type="u">
       <default>0</default>
       <range min="0" max="12"/>

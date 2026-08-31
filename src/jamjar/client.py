@@ -396,6 +396,24 @@ class JellyfinClient:
         data = await self._get_json("/Items", params=params)
         return [track_from_json(item) for item in data.get("Items", [])]
 
+    async def tracks_by_ids(self, ids: list[str]) -> list[Track]:
+        """Look up tracks by item id, in the order asked for.
+
+        Jellyfin returns `Ids` matches in its own sort order, so the
+        caller's ordering — a saved queue, say — has to be reapplied here.
+        """
+        if not ids:
+            return []
+        data = await self._get_json("/Items", params={
+            "userId":                 self.user_id,
+            "Ids":                    ",".join(ids),
+            "Fields":                 "MediaSources,AlbumPrimaryImageTag",
+            "EnableTotalRecordCount": "false",
+        }, expire_after=METADATA_TTL)
+        found = {t.id: t for t in
+                 (track_from_json(item) for item in data.get("Items", []))}
+        return [found[i] for i in ids if i in found]
+
     async def album_tracks(self, album_id: str) -> list[Track]:
         data = await self._get_json("/Items", params={
             "userId":   self.user_id,

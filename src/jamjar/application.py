@@ -24,6 +24,12 @@ log = logging.getLogger(__name__)
 
 APP_ID = "land.rob.jamjar"
 
+# Cap on how much queue is written to GSettings. A running radio station
+# appends 60 tracks at a time, so an unbounded save would grow forever;
+# the window is centred on the play head, which is the part that matters.
+QUEUE_SAVE_LIMIT = 500
+QUEUE_SAVE_DEBOUNCE_MS = 2000
+
 
 class JamjarApplication(Adw.Application):
     __gtype_name__ = "JamjarApplication"
@@ -59,6 +65,7 @@ class JamjarApplication(Adw.Application):
         self._holding = False
         self._settings_handlers: list[int] = []
         self._player_state_handler: int | None = None
+        self._queue_save_source: int | None = None
         # Per-message dedup so a wave of related failures (e.g. losing
         # network mid-prefetch) doesn't stack four toasts on the user.
         self._last_toast_message: str = ""
@@ -82,6 +89,7 @@ class JamjarApplication(Adw.Application):
         win.present()
 
     def do_shutdown(self) -> None:  # type: ignore[override]
+        self._save_playback_state()
         if self.player:
             self.player.close()
         if self.client:
@@ -125,8 +133,11 @@ class JamjarApplication(Adw.Application):
 
         self.radio = RadioSession(self)
         self._player_state_handler = self.player.connect("state-changed", self._on_player_state)
+        self.queue.connect("queue-changed",   self._schedule_playback_save)
+        self.queue.connect("current-changed", self._schedule_playback_save)
         self.sleep_timer.attach(self.player)
         self._update_session_actions()
+        self._restore_playback_state()
 
     def detach_session(self) -> None:
         self.sleep_timer.detach()
@@ -159,6 +170,71 @@ class JamjarApplication(Adw.Application):
         self.radio = None
         self._release_hold()
         self._update_session_actions()
+
+    # ------- playback state persistence -------
+
+    def _schedule_playback_save(self, *_args) -> None:
+        if self._queue_save_source is not None:
+            GLib.source_remove(self._queue_save_source)
+
+        def flush() -> bool:
+            self._queue_save_source = None
+            self._save_playback_state()
+            return False
+
+        self._queue_save_source = GLib.timeout_add(QUEUE_SAVE_DEBOUNCE_MS, flush)
+
+    def _save_playback_state(self) -> None:
+        """Persist the queue so closing the app doesn't lose your place."""
+        if self.queue is None:
+            return
+        tracks = self.queue.tracks
+        index = self.queue.index
+        if len(tracks) > QUEUE_SAVE_LIMIT:
+            start = 0 if index < 0 else min(index, len(tracks) - QUEUE_SAVE_LIMIT)
+            tracks = tracks[start:start + QUEUE_SAVE_LIMIT]
+            index = -1 if index < 0 else index - start
+        self.settings.set_strv("queue-track-ids", [t.id for t in tracks])
+        self.settings.set_int("queue-index", index)
+        self.settings.set_double(
+            "queue-position", self.player.position if self.player else 0.0)
+
+    def _restore_playback_state(self) -> None:
+        ids = list(self.settings.get_strv("queue-track-ids"))
+        if not ids or self.client is None:
+            return
+        index = self.settings.get_int("queue-index")
+        position = self.settings.get_double("queue-position")
+        current_id = ids[index] if 0 <= index < len(ids) else None
+        client = self.client
+
+        async def runme():
+            return await client.tracks_by_ids(ids)
+
+        def done(future):
+            try:
+                tracks = future.result()
+            except Exception as e:
+                # A queue we can't rebuild isn't worth a toast — the user
+                # didn't ask for anything yet.
+                log.info("queue restore skipped: %s", e)
+                return
+            GLib.idle_add(self._apply_restored_queue, tracks, current_id, position)
+
+        self.runner.submit(runme()).add_done_callback(done)
+
+    def _apply_restored_queue(self, tracks, current_id, position: float) -> bool:
+        if not tracks or self.queue is None or self.player is None:
+            return False
+        if self.queue.tracks:
+            # Something already started playing while the fetch was in
+            # flight — leave it alone.
+            return False
+        index = next((i for i, t in enumerate(tracks) if t.id == current_id), 0)
+        self.queue.restore(tracks, index)
+        self.player.prepare(tracks[index], position)
+        log.info("restored %d queued tracks at index %d", len(tracks), index)
+        return False
 
     # ------- favorite cross-surface sync -------
 
@@ -310,6 +386,8 @@ class JamjarApplication(Adw.Application):
             self.player.set_crossfade_albums(settings.get_boolean("crossfade-albums"))
 
     def _on_player_state(self, _player, state: str) -> None:
+        if state in ("paused", "stopped"):
+            self._schedule_playback_save()
         if state == "playing" and not self._holding:
             self.hold()
             self._holding = True
