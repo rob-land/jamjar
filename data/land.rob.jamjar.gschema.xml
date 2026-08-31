@@ -93,6 +93,26 @@
       <summary>Apply ReplayGain when tags are present</summary>
     </key>
 
+    <key name="crossfade-seconds" type="u">
+      <default>0</default>
+      <range min="0" max="12"/>
+      <summary>Crossfade length in seconds; 0 disables crossfading</summary>
+      <description>
+        Length of the overlap between one track and the next. 0 keeps the
+        gapless handoff, which is also used within an album unless
+        crossfade-albums is set.
+      </description>
+    </key>
+
+    <key name="crossfade-albums" type="b">
+      <default>false</default>
+      <summary>Crossfade between consecutive tracks of the same album</summary>
+      <description>
+        Off by default: album sequencing is usually deliberate, so tracks
+        from one album stay gapless even when crossfading is enabled.
+      </description>
+    </key>
+
     <key name="sleep-timer-default-minutes" type="u">
       <default>30</default>
       <range min="0" max="240"/>

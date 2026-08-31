@@ -9,13 +9,15 @@ from gi.repository import Adw, Gio, Gtk
 class PreferencesDialog(Adw.PreferencesDialog):
     __gtype_name__ = "JamjarPreferences"
 
-    color_scheme_row   = Gtk.Template.Child()
-    replaygain_row     = Gtk.Template.Child()
-    sleep_timer_row    = Gtk.Template.Child()
-    codec_wifi_row     = Gtk.Template.Child()
-    bitrate_wifi_row   = Gtk.Template.Child()
-    codec_mobile_row   = Gtk.Template.Child()
-    bitrate_mobile_row = Gtk.Template.Child()
+    color_scheme_row     = Gtk.Template.Child()
+    replaygain_row       = Gtk.Template.Child()
+    crossfade_row        = Gtk.Template.Child()
+    crossfade_albums_row = Gtk.Template.Child()
+    sleep_timer_row      = Gtk.Template.Child()
+    codec_wifi_row       = Gtk.Template.Child()
+    bitrate_wifi_row     = Gtk.Template.Child()
+    codec_mobile_row     = Gtk.Template.Child()
+    bitrate_mobile_row   = Gtk.Template.Child()
 
     def __init__(self, settings: Gio.Settings) -> None:
         super().__init__()
@@ -25,6 +27,12 @@ class PreferencesDialog(Adw.PreferencesDialog):
         self.color_scheme_row.connect("notify::selected", self._on_color_scheme)
 
         settings.bind("replaygain", self.replaygain_row, "active",
+                      Gio.SettingsBindFlags.DEFAULT)
+
+        self.crossfade_row.set_value(settings.get_uint("crossfade-seconds"))
+        self.crossfade_row.connect("changed", self._on_crossfade)
+
+        settings.bind("crossfade-albums", self.crossfade_albums_row, "active",
                       Gio.SettingsBindFlags.DEFAULT)
 
         self.sleep_timer_row.set_value(settings.get_uint("sleep-timer-default-minutes"))
@@ -52,6 +60,9 @@ class PreferencesDialog(Adw.PreferencesDialog):
             2: Adw.ColorScheme.FORCE_DARK,
         }
         manager.set_color_scheme(schemes.get(selected, Adw.ColorScheme.DEFAULT))
+
+    def _on_crossfade(self, row) -> None:
+        self.settings.set_uint("crossfade-seconds", int(row.get_value()))
 
     def _on_sleep_timer(self, row) -> None:
         self.settings.set_uint("sleep-timer-default-minutes", int(row.get_value()))

@@ -28,6 +28,22 @@ template $JamjarPreferences: Adw.PreferencesDialog {
         subtitle: _("Use ReplayGain tags when present");
       }
 
+      Adw.SpinRow crossfade_row {
+        title: _("Crossfade");
+        subtitle: _("Seconds of overlap between tracks; 0 plays them gapless");
+
+        adjustment: Adjustment {
+          lower: 0;
+          upper: 12;
+          step-increment: 1;
+        };
+      }
+
+      Adw.SwitchRow crossfade_albums_row {
+        title: _("Crossfade Within Albums");
+        subtitle: _("Off keeps album tracks gapless");
+      }
+
       Adw.SpinRow sleep_timer_row {
         title: _("Default Sleep Timer");
         subtitle: _("Minutes");

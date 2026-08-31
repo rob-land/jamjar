@@ -55,7 +55,7 @@ class JamjarApplication(Adw.Application):
         self.mpris: MprisService | None = None
         self.sleep_timer = SleepTimer()
         self._holding = False
-        self._settings_handler: int | None = None
+        self._settings_handlers: list[int] = []
         self._player_state_handler: int | None = None
         # Per-message dedup so a wave of related failures (e.g. losing
         # network mid-prefetch) doesn't stack four toasts on the user.
@@ -105,9 +105,14 @@ class JamjarApplication(Adw.Application):
         self.player.configure(
             volume=self.settings.get_double("volume"),
             replaygain=self.settings.get_boolean("replaygain"),
+            crossfade_seconds=self.settings.get_uint("crossfade-seconds"),
+            crossfade_albums=self.settings.get_boolean("crossfade-albums"),
         )
-        self._settings_handler = self.settings.connect(
-            "changed::replaygain", self._on_replaygain_changed)
+        self._settings_handlers = [
+            self.settings.connect("changed::replaygain", self._on_replaygain_changed),
+            self.settings.connect("changed::crossfade-seconds", self._on_crossfade_changed),
+            self.settings.connect("changed::crossfade-albums", self._on_crossfade_changed),
+        ]
 
         win = self.props.active_window
         self.mpris = MprisService(
@@ -122,9 +127,9 @@ class JamjarApplication(Adw.Application):
 
     def detach_session(self) -> None:
         self.sleep_timer.detach()
-        if self._settings_handler is not None:
-            self.settings.disconnect(self._settings_handler)
-            self._settings_handler = None
+        for handler in self._settings_handlers:
+            self.settings.disconnect(handler)
+        self._settings_handlers = []
         if self.player:
             if self._player_state_handler is not None:
                 self.player.disconnect(self._player_state_handler)
@@ -294,6 +299,11 @@ class JamjarApplication(Adw.Application):
     def _on_replaygain_changed(self, settings, _key) -> None:
         if self.player is not None:
             self.player.set_replaygain(settings.get_boolean("replaygain"))
+
+    def _on_crossfade_changed(self, settings, _key) -> None:
+        if self.player is not None:
+            self.player.set_crossfade(settings.get_uint("crossfade-seconds"))
+            self.player.set_crossfade_albums(settings.get_boolean("crossfade-albums"))
 
     def _on_player_state(self, _player, state: str) -> None:
         if state == "playing" and not self._holding:
