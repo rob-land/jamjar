@@ -443,6 +443,28 @@ class JellyfinClient:
         }, expire_after=METADATA_TTL)
         return [track_from_json(item) for item in data.get("Items", [])]
 
+    async def artist_top_tracks(self, artist_id: str,
+                                limit: int = 5) -> list[Track]:
+        """This artist's most played tracks, for the artist page.
+
+        Sorted by the same per-user PlayCount the Most Played shelf uses;
+        an artist you've never played comes back empty rather than in an
+        arbitrary order, which is why the section hides itself.
+        """
+        data = await self._get_json("/Items", params={
+            "userId":                 self.user_id,
+            "ArtistIds":              artist_id,
+            "IncludeItemTypes":       "Audio",
+            "Recursive":              "true",
+            "SortBy":                 "PlayCount",
+            "SortOrder":              "Descending",
+            "Filters":                "IsPlayed",
+            "Limit":                  limit,
+            "Fields":                 "MediaSources,AlbumPrimaryImageTag",
+            "EnableTotalRecordCount": "false",
+        }, expire_after=HOME_SHELF_TTL)
+        return [track_from_json(item) for item in data.get("Items", [])]
+
     async def artist_albums(self, artist_id: str) -> list[Album]:
         data = await self._get_json("/Items", params={
             "userId":           self.user_id,

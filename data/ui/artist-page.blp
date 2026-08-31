@@ -97,6 +97,28 @@ template $JamjarArtistPage: Adw.NavigationPage {
             }
           }
 
+          Box top_tracks_section {
+            orientation: vertical;
+            spacing: 6;
+            margin-bottom: 12;
+            // Shown only when the server reports play counts for this
+            // artist — an empty "Top Tracks" heading is just noise.
+            visible: false;
+
+            Label {
+              label: _("Top Tracks");
+              xalign: 0;
+
+              styles ["heading"]
+            }
+
+            ListBox top_tracks_list {
+              selection-mode: none;
+
+              styles ["boxed-list"]
+            }
+          }
+
           Label {
             label: _("Albums");
             xalign: 0;

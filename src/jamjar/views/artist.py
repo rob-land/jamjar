@@ -11,12 +11,15 @@ from ..models import Artist
 from ._common import (
     apply_favorite_visual,
     artist_tile,
+    escape_markup,
+    format_duration,
     clear_remote_image,
     commit_favorite,
     load_remote_image_async,
     start_instant_mix,
 )
 from .album_menu import install_album_menu
+from .track_menu import install_track_menu
 
 if TYPE_CHECKING:
     from ..application import JamjarApplication
@@ -36,6 +39,8 @@ class ArtistPage(Adw.NavigationPage):
     favorite_button     = Gtk.Template.Child()
     albums_spinner      = Gtk.Template.Child()
     artist_albums_grid  = Gtk.Template.Child()
+    top_tracks_section  = Gtk.Template.Child()
+    top_tracks_list     = Gtk.Template.Child()
     similar_section     = Gtk.Template.Child()
     similar_row         = Gtk.Template.Child()
 
@@ -44,6 +49,7 @@ class ArtistPage(Adw.NavigationPage):
         self.app = app
         self.window = window
         self.artist = artist
+        self._top_tracks: list = []
 
         self.set_title(artist.name)
         self.artist_name_label.set_label(artist.name)
@@ -72,6 +78,7 @@ class ArtistPage(Adw.NavigationPage):
 
         app.library.artist_albums(artist.id, self._on_albums_loaded)
         self._load_similar()
+        self._load_top_tracks()
 
     def _on_albums_loaded(self, albums: list) -> None:
         from ..library import _Wrapper
@@ -163,3 +170,57 @@ class ArtistPage(Adw.NavigationPage):
             self.similar_row.append(artist_tile(item, self.app, self.window))
         self.similar_section.set_visible(True)
         return False
+
+    def _load_top_tracks(self) -> None:
+        if self.app.client is None:
+            return
+        client = self.app.client
+        artist_id = self.artist.id
+
+        async def runme():
+            return await client.artist_top_tracks(artist_id)
+
+        def done(future):
+            try:
+                tracks = future.result()
+            except Exception as e:
+                log.info("top tracks unavailable for %s: %s", artist_id, e)
+                return
+            GLib.idle_add(self._apply_top_tracks, tracks)
+
+        self.app.runner.submit(runme()).add_done_callback(done)
+
+    def _apply_top_tracks(self, tracks) -> bool:
+        if not tracks:
+            return False
+        self._top_tracks = tracks
+        for child in list(self.top_tracks_list):
+            self.top_tracks_list.remove(child)
+        for index, track in enumerate(tracks):
+            row = Adw.ActionRow(title=escape_markup(track.name),
+                                subtitle=escape_markup(track.album),
+                                activatable=True)
+            number = Gtk.Label(label=str(index + 1), width_chars=2)
+            number.add_css_class("dim-label")
+            number.add_css_class("numeric")
+            row.add_prefix(number)
+            plays = int(track.user_data.get("PlayCount") or 0)
+            if plays:
+                label = Gtk.Label(label=f"{plays} plays" if plays > 1 else "1 play")
+                label.add_css_class("dim-label")
+                label.add_css_class("caption")
+                row.add_suffix(label)
+            duration = Gtk.Label(label=format_duration(track.duration_seconds))
+            duration.add_css_class("dim-label")
+            duration.add_css_class("numeric")
+            row.add_suffix(duration)
+            row.connect("activated", lambda _r, i=index: self._play_top_track(i))
+            install_track_menu(row, lambda t=track: t, self.app, self.window)
+            self.top_tracks_list.append(row)
+        self.top_tracks_section.set_visible(True)
+        return False
+
+    def _play_top_track(self, index: int) -> None:
+        if self.app.queue is None:
+            return
+        self.app.queue.replace(self._top_tracks, start_index=index)
