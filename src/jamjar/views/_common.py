@@ -157,7 +157,9 @@ def fallback_icon(name: str = "audio-x-generic-symbolic", pixel_size: int = 64) 
 
 
 def load_remote_image_async(url: str, headers: dict, picture: Gtk.Picture,
-                            session, runner, fallback_icon_name: str = "audio-x-generic-symbolic") -> None:
+                            session, runner,
+                            fallback_icon_name: str = "audio-x-generic-symbolic",
+                            on_bytes: Callable[[bytes], None] | None = None) -> None:
     """Download an image to a Gdk.Texture and set it on `picture`. Best-effort.
 
     `session` is an aiohttp.ClientSession bound to `runner`.
@@ -172,6 +174,10 @@ def load_remote_image_async(url: str, headers: dict, picture: Gtk.Picture,
 
     On disk-cache hit the bytes are decoded and applied synchronously —
     the bind-time fast path that makes warm scrollback feel instant.
+
+    `on_bytes` is handed the raw image data whenever it lands (cache hit
+    or fetch), on the GTK thread, for callers that need the pixels for
+    something other than display — cover-art tinting, say.
     """
     from aiohttp import ClientError
 
@@ -187,6 +193,8 @@ def load_remote_image_async(url: str, headers: dict, picture: Gtk.Picture,
     cached = imagecache.get(url)
     if cached is not None:
         _apply_image_bytes(picture, url, cached)
+        if on_bytes is not None:
+            on_bytes(cached)
         return
 
     async def fetch():
@@ -216,6 +224,8 @@ def load_remote_image_async(url: str, headers: dict, picture: Gtk.Picture,
                 picture.set_paintable(None)
                 return False
             _set_pixbuf_from_bytes(picture, data)
+            if on_bytes is not None:
+                on_bytes(data)
             return False
 
         GLib.idle_add(set_on_main)

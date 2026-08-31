@@ -10,6 +10,7 @@ class PreferencesDialog(Adw.PreferencesDialog):
     __gtype_name__ = "JamjarPreferences"
 
     color_scheme_row     = Gtk.Template.Child()
+    cover_theming_row    = Gtk.Template.Child()
     replaygain_row       = Gtk.Template.Child()
     autoplay_row         = Gtk.Template.Child()
     crossfade_row        = Gtk.Template.Child()
@@ -26,6 +27,9 @@ class PreferencesDialog(Adw.PreferencesDialog):
 
         self.color_scheme_row.set_selected(settings.get_enum("color-scheme"))
         self.color_scheme_row.connect("notify::selected", self._on_color_scheme)
+
+        settings.bind("cover-art-theming", self.cover_theming_row, "active",
+                      Gio.SettingsBindFlags.DEFAULT)
 
         settings.bind("replaygain", self.replaygain_row, "active",
                       Gio.SettingsBindFlags.DEFAULT)

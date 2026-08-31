@@ -18,6 +18,11 @@ template $JamjarPreferences: Adw.PreferencesDialog {
           strings [_("Follow System"), _("Light"), _("Dark")]
         };
       }
+
+      Adw.SwitchRow cover_theming_row {
+        title: _("Cover Art Tint");
+        subtitle: _("Colour the Now Playing page from the album art");
+      }
     }
 
     Adw.PreferencesGroup {

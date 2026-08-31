@@ -9,6 +9,7 @@ from gi.repository import Adw, Gdk, GLib, GObject, Gtk
 
 from ..lyrics import Lyrics, active_index, fetch_lyrics
 from ..queue import RepeatMode
+from .. import palette
 from ._common import (
     apply_favorite_visual,
     commit_favorite,
@@ -431,6 +432,7 @@ class NowPlayingPage(Adw.NavigationPage):
         self.np_repeat.connect("clicked", self._on_repeat_clicked)
         self.favorite_button.connect("toggled", self._on_favorite_toggled)
         app.connect("favorite-changed", self._on_favorite_changed_external)
+        self._init_tint()
 
         # Prime initial state.
         if app.player and app.queue:
@@ -440,6 +442,60 @@ class NowPlayingPage(Adw.NavigationPage):
             self._sync_repeat()
             self._refresh_queue_page()
 
+    # ------- cover art tint -------
+
+    def _init_tint(self) -> None:
+        """Colour the page from the artwork, Amberol-style.
+
+        The provider is per-page and reloaded on every track; the class is
+        only added once there's a colour to show, so a track with no art
+        falls back to the plain theme background rather than a stale tint.
+        """
+        self._tint_provider = Gtk.CssProvider()
+        self._tint_rgb: tuple[int, int, int] | None = None
+        display = self.get_display()
+        if display is not None:
+            Gtk.StyleContext.add_provider_for_display(
+                display, self._tint_provider,
+                Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION + 1)
+        # Re-derive on light/dark switch: the same cover needs a different
+        # lightness to stay readable.
+        Adw.StyleManager.get_default().connect(
+            "notify::dark", lambda *_: self._apply_tint())
+        self.app.settings.connect("changed::cover-art-theming",
+                                  lambda *_: self._apply_tint())
+
+    def _tint_from_cover(self, data: bytes) -> None:
+        rgb = palette.dominant_color(data)
+        if rgb is None:
+            return
+        self._tint_rgb = rgb
+        self._apply_tint()
+
+    def _clear_tint(self) -> None:
+        self._tint_rgb = None
+        self._apply_tint()
+
+    def _apply_tint(self) -> None:
+        enabled = self.app.settings.get_boolean("cover-art-theming")
+        if not enabled or self._tint_rgb is None:
+            self.remove_css_class("np-tinted")
+            return
+        dark = Adw.StyleManager.get_default().get_dark()
+        r, g, b = palette.tint_color(self._tint_rgb, dark=dark)
+        # The strong end of the gradient sits behind the cover, so it has
+        # to stay saturated well past the artwork or the visible half of
+        # the page reads as untinted.
+        top, mid, base = (0.75, 0.40, 0.22) if dark else (0.70, 0.36, 0.18)
+        self._tint_provider.load_from_string(
+            ".np-tinted {"
+            f" background-image: linear-gradient(to bottom,"
+            f" rgba({r}, {g}, {b}, {top}) 0%,"
+            f" rgba({r}, {g}, {b}, {mid}) 55%,"
+            f" rgba({r}, {g}, {b}, {base}) 100%); }}"
+        )
+        self.add_css_class("np-tinted")
+
     def _on_track(self, _player, track) -> None:
         if track is None:
             self.np_title.set_label("")
@@ -448,6 +504,7 @@ class NowPlayingPage(Adw.NavigationPage):
             make_link_label(self.np_artist, None)
             make_link_label(self.np_album, None)
             self.full_cover.set_paintable(None)
+            self._clear_tint()
             self._sync_favorite(False)
             self.favorite_button.set_sensitive(False)
             self._render_lyrics_placeholder("No track playing")
@@ -481,7 +538,10 @@ class NowPlayingPage(Adw.NavigationPage):
                 max_width=720,
             )
             load_remote_image_async(url, self.app.client.headers, self.full_cover,
-                                    self.app.client.session, self.app.runner)
+                                    self.app.client.session, self.app.runner,
+                                    on_bytes=self._tint_from_cover)
+        else:
+            self._clear_tint()
         if track.duration_seconds:
             self._duration = track.duration_seconds
             self.np_progress.get_adjustment().set_upper(track.duration_seconds)

@@ -93,6 +93,11 @@
       <summary>Apply ReplayGain when tags are present</summary>
     </key>
 
+    <key name="cover-art-theming" type="b">
+      <default>true</default>
+      <summary>Tint the Now Playing page with the cover's dominant colour</summary>
+    </key>
+
     <key name="autoplay-radio" type="b">
       <default>true</default>
       <summary>Keep playing similar music when the queue ends</summary>
