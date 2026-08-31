@@ -71,6 +71,11 @@ template $JamjarWindow: Adw.ApplicationWindow {
 menu primary_menu {
   section {
     item {
+      label: _("_Play On…");
+      action: "app.play-on";
+    }
+
+    item {
       label: _("Sleep _Timer…");
       action: "app.sleep-timer";
     }

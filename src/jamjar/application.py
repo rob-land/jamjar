@@ -316,7 +316,7 @@ class JamjarApplication(Adw.Application):
     # is currently attached.
     SESSION_ACTIONS = ("logout", "switch-server", "search",
                        "toggle", "next", "previous", "sleep-timer",
-                       "volume-up", "volume-down")
+                       "play-on", "volume-up", "volume-down")
 
     def _install_actions(self) -> None:
         actions: list[tuple[str, callable]] = [
@@ -327,6 +327,7 @@ class JamjarApplication(Adw.Application):
             ("switch-server", lambda *_: self._logout()),
             ("search",        lambda *_: self._focus_search()),
             ("sleep-timer",   lambda *_: self._show_sleep_timer()),
+            ("play-on",       lambda *_: self._show_remote_devices()),
         ]
         for name, callback in actions:
             action = Gio.SimpleAction.new(name, None)
@@ -450,6 +451,13 @@ class JamjarApplication(Adw.Application):
         from .views.prefs import PreferencesDialog
         dialog = PreferencesDialog(self.settings)
         dialog.present(self.props.active_window)
+
+    def _show_remote_devices(self) -> None:
+        from .views.remote import RemoteDevicesDialog
+        win = self.props.active_window
+        if win is None or self.client is None:
+            return
+        RemoteDevicesDialog(self).present(win)
 
     def _show_sleep_timer(self) -> None:
         from .views.sleep_timer import SleepTimerDialog

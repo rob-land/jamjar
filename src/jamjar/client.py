@@ -561,6 +561,44 @@ class JellyfinClient:
             expire_after=METADATA_TTL,
         )
 
+    # ------- remote sessions -------
+
+    async def remote_sessions(self) -> list[dict]:
+        """Other Jellyfin clients this user can push playback to.
+
+        Filters to sessions that accept remote control and can play audio,
+        and drops our own session — Jellyfin lists it like any other, and
+        "play on this device" is what the play button already does.
+        """
+        data = await self._get_json("/Sessions", params={
+            "controllableByUserId": self.user_id,
+        }, expire_after=0)
+        sessions = []
+        for item in data or []:
+            if item.get("DeviceId") == self.device_id:
+                continue
+            if not item.get("SupportsRemoteControl"):
+                continue
+            media = item.get("PlayableMediaTypes") or []
+            if media and "Audio" not in media:
+                continue
+            sessions.append(item)
+        return sessions
+
+    async def play_on_session(self, session_id: str, item_ids: list[str], *,
+                              start_index: int = 0,
+                              position_ticks: int = 0) -> None:
+        """Hand a queue to another device and tell it to start playing."""
+        await self._post_json(
+            f"/Sessions/{session_id}/Playing",
+            params={
+                "playCommand":       "PlayNow",
+                "itemIds":           ",".join(item_ids),
+                "startIndex":        start_index,
+                "startPositionTicks": position_ticks,
+            },
+        )
+
     # ------- favorites -------
 
     async def set_favorite(self, item_id: str, is_favorite: bool) -> None:
