@@ -7,11 +7,22 @@ case: the failure mode worth guarding is offering a station that returns
 nothing, so a mood whose genres the library doesn't have must not
 appear.
 """
+import asyncio
+from concurrent.futures import Future
+
+import gi
 import pytest
 
-from jamjar.radio import (
+gi.require_version("Gst", "1.0")
+
+from gi.repository import GLib, GObject  # noqa: E402
+
+from jamjar.models import Track  # noqa: E402
+from jamjar.queue import PlayQueue, RepeatMode  # noqa: E402
+from jamjar.radio import (  # noqa: E402
     MOOD_GENRES,
     REFILL_THRESHOLD,
+    RadioSession,
     Station,
     build_stations,
     mix_station,
@@ -140,3 +151,110 @@ def test_refill_threshold_leaves_room_to_fetch():
     # The refill fires with tracks still queued so the fetch has time to
     # land before the queue runs dry.
     assert REFILL_THRESHOLD >= 3
+
+
+# --- autoplay continuation ---------------------------------------------
+#
+# "Keep Playing": when the last queued track starts, the session adopts
+# the queue as an Instant Mix station seeded from that track, so playback
+# continues instead of falling silent. The mix is fetched while the track
+# still has minutes left, which is what makes the continuation seamless.
+
+
+def _track(tid):
+    return Track(id=tid, name=tid, album="", album_id="", artists=(),
+                 artist_ids=(), duration_ticks=0)
+
+
+class _Client:
+    def __init__(self):
+        self.seeds = []
+
+    async def instant_mix(self, item_id, limit=50):
+        self.seeds.append(item_id)
+        return [_track(f"mix-{i}") for i in range(4)]
+
+
+class _Player(GObject.Object):
+    __gtype_name__ = "RadioTestPlayer"
+    __gsignals__ = {"track-changed": (GObject.SignalFlags.RUN_FIRST, None, (object,))}
+
+
+class _Settings:
+    def __init__(self, autoplay):
+        self._autoplay = autoplay
+
+    def get_boolean(self, _key):
+        return self._autoplay
+
+
+class _Runner:
+    def submit(self, coro):
+        future = Future()
+        future.set_result(asyncio.run(coro))
+        return future
+
+
+class _App:
+    def __init__(self, autoplay=True):
+        self.client = _Client()
+        self.queue = PlayQueue(self.client)
+        self.player = _Player()
+        self.runner = _Runner()
+        self.settings = _Settings(autoplay)
+
+    def show_toast(self, _message):
+        pass
+
+
+def _play_last(app, *, repeat=RepeatMode.OFF, start_index=1):
+    """Announce a track the way the player does, then let idle work run."""
+    session = RadioSession(app)
+    app.queue.repeat = int(repeat)
+    app.queue.replace([_track("one"), _track("two")], start_index=start_index)
+    app.player.emit("track-changed", app.queue.current)
+    context = GLib.MainContext.default()
+    while context.iteration(False):
+        pass
+    return session
+
+
+def test_autoplay_extends_the_queue_from_the_last_track():
+    app = _App()
+    _play_last(app)
+    assert app.client.seeds == ["two"]
+    assert len(app.queue) == 6
+
+
+def test_autoplay_adopts_the_queue_as_a_station():
+    app = _App()
+    session = _play_last(app)
+    assert session.station is not None
+    assert session.station.seed_id == "two"
+    assert app.queue.origin == session.origin
+
+
+def test_autoplay_keeps_the_tracks_already_queued():
+    app = _App()
+    _play_last(app)
+    assert [t.id for t in app.queue.tracks][:2] == ["one", "two"]
+
+
+def test_autoplay_respects_the_setting():
+    app = _App(autoplay=False)
+    _play_last(app)
+    assert app.client.seeds == []
+    assert len(app.queue) == 2
+
+
+def test_no_autoplay_while_repeating():
+    # A repeating queue never ends, so there is nothing to continue.
+    app = _App()
+    _play_last(app, repeat=RepeatMode.ALL)
+    assert app.client.seeds == []
+
+
+def test_no_autoplay_before_the_last_track():
+    app = _App()
+    _play_last(app, start_index=0)
+    assert app.client.seeds == []

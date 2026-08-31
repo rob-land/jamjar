@@ -28,6 +28,11 @@ template $JamjarPreferences: Adw.PreferencesDialog {
         subtitle: _("Use ReplayGain tags when present");
       }
 
+      Adw.SwitchRow autoplay_row {
+        title: _("Keep Playing");
+        subtitle: _("Continue with similar music when the queue ends");
+      }
+
       Adw.SpinRow crossfade_row {
         title: _("Crossfade");
         subtitle: _("Seconds of overlap between tracks; 0 plays them gapless");

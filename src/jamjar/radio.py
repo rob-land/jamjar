@@ -26,6 +26,8 @@ from dataclasses import dataclass
 
 from gi.repository import GLib, GObject
 
+from .queue import RepeatMode
+
 log = logging.getLogger(__name__)
 
 BATCH_SIZE = 60
@@ -217,7 +219,43 @@ class RadioSession(GObject.Object):
         self._maybe_refill()
 
     def _on_track_changed(self, _player, _track) -> None:
-        self._maybe_refill()
+        if self.station is None:
+            self._maybe_autoplay()
+        else:
+            self._maybe_refill()
+
+    def _maybe_autoplay(self) -> None:
+        """Keep going past the end of a hand-built queue.
+
+        When the last queued track starts playing, adopt the queue as an
+        Instant Mix station seeded from that track. The mix is fetched
+        while the track still has minutes to run, so the continuation is
+        seamless rather than a stop followed by a restart — and because
+        it becomes a real station, it then refills like any other.
+        """
+        queue = self.app.queue
+        if queue is None or not self._autoplay_enabled():
+            return
+        if queue.repeat != int(RepeatMode.OFF):
+            # A repeating queue never ends, so there is nothing to extend.
+            return
+        if queue.index < 0 or len(queue) - queue.index > 1:
+            return
+        seed = queue.current
+        if seed is None:
+            return
+        log.debug("autoplay continuing from %s", seed.id)
+        self.station = mix_station(seed, kind_label="track")
+        # Take ownership of the queue that's already playing rather than
+        # replacing it — the user's tracks stay put, the mix appends.
+        queue.origin = self.origin
+        self._served = [t.id for t in queue.tracks]
+        self.emit("station-changed", self.station)
+        self._fetch(self.station, first=False)
+
+    def _autoplay_enabled(self) -> bool:
+        settings = getattr(self.app, "settings", None)
+        return bool(settings.get_boolean("autoplay-radio")) if settings else False
 
     def _maybe_refill(self) -> None:
         queue = self.app.queue

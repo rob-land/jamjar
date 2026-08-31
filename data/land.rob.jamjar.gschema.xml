@@ -93,6 +93,15 @@
       <summary>Apply ReplayGain when tags are present</summary>
     </key>
 
+    <key name="autoplay-radio" type="b">
+      <default>true</default>
+      <summary>Keep playing similar music when the queue ends</summary>
+      <description>
+        When the last queued track starts, seed an Instant Mix from it and
+        append the result, so playback continues instead of stopping.
+      </description>
+    </key>
+
     <key name="queue-track-ids" type="as">
       <default>[]</default>
       <summary>Item ids of the last play queue</summary>

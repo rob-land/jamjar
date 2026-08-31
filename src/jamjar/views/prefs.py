@@ -11,6 +11,7 @@ class PreferencesDialog(Adw.PreferencesDialog):
 
     color_scheme_row     = Gtk.Template.Child()
     replaygain_row       = Gtk.Template.Child()
+    autoplay_row         = Gtk.Template.Child()
     crossfade_row        = Gtk.Template.Child()
     crossfade_albums_row = Gtk.Template.Child()
     sleep_timer_row      = Gtk.Template.Child()
@@ -33,6 +34,9 @@ class PreferencesDialog(Adw.PreferencesDialog):
         self.crossfade_row.connect("changed", self._on_crossfade)
 
         settings.bind("crossfade-albums", self.crossfade_albums_row, "active",
+                      Gio.SettingsBindFlags.DEFAULT)
+
+        settings.bind("autoplay-radio", self.autoplay_row, "active",
                       Gio.SettingsBindFlags.DEFAULT)
 
         self.sleep_timer_row.set_value(settings.get_uint("sleep-timer-default-minutes"))
