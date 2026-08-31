@@ -195,7 +195,15 @@ untouched by any of it.
 ### 13. Offline downloads
 Per `DESIGN.md` v0.3. Symfonium's killer feature for phone users.
 
-### 14. Smart playlists / saved searches
+### 14. Smart playlists / saved searches — partial
+The queue page menu has **Save as Playlist…**, which turns whatever is
+queued into a real Jellyfin playlist — most useful after a radio station
+has been running, since the station found the tracks and this keeps
+them. The default name follows the active station.
+
+Still open: playlists that stay live (a saved query that re-evaluates),
+which needs either client-side rules or Jellyfin's own smart-playlist
+plugin.
 
 ---
 

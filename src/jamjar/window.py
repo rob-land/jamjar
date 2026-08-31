@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import logging
+import time
+from gettext import gettext as _
 from typing import TYPE_CHECKING
 
 from gi.repository import Adw, Gdk, Gio, GLib, Gtk
@@ -71,6 +73,10 @@ class JamjarWindow(Adw.ApplicationWindow):
         clear_action = Gio.SimpleAction.new("clear-queue", None)
         clear_action.connect("activate", lambda *_: self.app.queue and self.app.queue.clear())
         self.add_action(clear_action)
+
+        save_queue_action = Gio.SimpleAction.new("save-queue", None)
+        save_queue_action.connect("activate", lambda *_: self._save_queue_as_playlist())
+        self.add_action(save_queue_action)
 
         # Suite-standard window action: any child widget can fire a
         # toast via widget.activate_action("win.toast", GLib.Variant("s", msg)).
@@ -262,6 +268,66 @@ class JamjarWindow(Adw.ApplicationWindow):
         if self.app.player:
             self.app.player.toggle()
         return True
+
+    def _save_queue_as_playlist(self) -> None:
+        """Turn whatever is queued into a real Jellyfin playlist.
+
+        Most useful after a radio station has been running: the station
+        found the tracks, this keeps them. The default name follows the
+        station when one is playing.
+        """
+        app = self.app
+        if app.client is None or app.queue is None or not len(app.queue):
+            app.show_toast(_("Nothing in the queue to save."))
+            return
+        station = app.radio.station if app.radio else None
+        default_name = station.title if station else time.strftime("Queue %-d %b %Y")
+
+        entry = Gtk.Entry(text=default_name)
+        entry.set_placeholder_text(_("Playlist name"))
+        dialog = Adw.AlertDialog(
+            heading=_("Save Queue as Playlist"),
+            body=_("%d tracks will be saved.") % len(app.queue),
+        )
+        dialog.set_extra_child(entry)
+        dialog.add_response("cancel", _("_Cancel"))
+        dialog.add_response("save", _("_Save"))
+        dialog.set_default_response("save")
+        dialog.set_close_response("cancel")
+        dialog.set_response_appearance("save", Adw.ResponseAppearance.SUGGESTED)
+
+        def on_response(_dlg, response: str) -> None:
+            if response != "save":
+                return
+            name = entry.get_text().strip()
+            if not name:
+                app.show_toast(_("Enter a playlist name."))
+                return
+            self._create_queue_playlist(name)
+
+        dialog.connect("response", on_response)
+        dialog.present(self)
+
+    def _create_queue_playlist(self, name: str) -> None:
+        app = self.app
+        item_ids = [t.id for t in app.queue.tracks]
+        client = app.client
+
+        async def runme():
+            return await client.create_playlist(name, item_ids=item_ids)
+
+        def done(future):
+            try:
+                future.result()
+            except Exception as e:
+                log.warning("save queue as playlist failed: %s", e)
+                app.show_toast(_("Couldn't save the playlist."))
+                return
+            app.show_toast(_("Saved “%s”") % name)
+            if app.library is not None:
+                GLib.idle_add(lambda: (app.library.refresh_playlists(), False)[1])
+
+        app.runner.submit(runme()).add_done_callback(done)
 
     def _on_close_request(self, _window) -> bool:
         # Stop the player so the held GApplication releases and the process

@@ -72,6 +72,13 @@ template $JamjarQueuePage: Adw.NavigationPage {
 menu queue_menu {
   section {
     item {
+      label: _("Save as Playlist…");
+      action: "win.save-queue";
+    }
+  }
+
+  section {
+    item {
       label: _("Clear Queue");
       action: "win.clear-queue";
     }
