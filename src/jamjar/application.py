@@ -13,6 +13,7 @@ from .auth import new_device_id
 from .client import AsyncRunner, JellyfinClient
 from .library import Library
 from .mpris import MprisService
+from .offline import OfflineManager
 from .player import Player
 from .queue import PlayQueue
 from .radio import RadioSession
@@ -62,6 +63,7 @@ class JamjarApplication(Adw.Application):
         self.scrobbler: Scrobbler | None = None
         self.mpris: MprisService | None = None
         self.radio: RadioSession | None = None
+        self.offline: OfflineManager | None = None
         self.sleep_timer = SleepTimer()
         self.search_provider = SearchProvider(self)
         self._holding = False
@@ -144,6 +146,10 @@ class JamjarApplication(Adw.Application):
         )
 
         self.radio = RadioSession(self)
+        self.offline = OfflineManager(client, self.runner)
+        # The player checks this before every stream URL, so a downloaded
+        # track plays from disk — and keeps playing with no network.
+        self.player.offline = self.offline
         self._player_state_handler = self.player.connect("state-changed", self._on_player_state)
         self.queue.connect("queue-changed",   self._schedule_playback_save)
         self.queue.connect("current-changed", self._schedule_playback_save)
@@ -180,6 +186,9 @@ class JamjarApplication(Adw.Application):
         self.scrobbler = None
         self.mpris = None
         self.radio = None
+        if self.offline is not None:
+            self.offline.index.close()
+            self.offline = None
         self._release_hold()
         self._update_session_actions()
 

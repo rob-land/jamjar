@@ -107,6 +107,11 @@ def _build_popover(track, app, window, parent) -> Gtk.PopoverMenu:
                lambda: show_add_to_playlist_dialog(track, app, window),
                enabled=app.client is not None)
 
+    downloaded = app.offline is not None and app.offline.is_offline(track.id)
+    add_action("download",
+               lambda: _toggle_download(track, app, downloaded),
+               enabled=app.offline is not None)
+
     menu = Gio.Menu()
     play_section = Gio.Menu()
     play_section.append("Play Now", "trackmenu.play-now")
@@ -123,6 +128,8 @@ def _build_popover(track, app, window, parent) -> Gtk.PopoverMenu:
     fav_section = Gio.Menu()
     fav_section.append(fav_label, "trackmenu.toggle-favorite")
     fav_section.append("Add to Playlist", "trackmenu.add-to-playlist")
+    fav_section.append("Remove Download" if downloaded else "Download",
+                       "trackmenu.download")
     menu.append_section(None, fav_section)
 
     popover = Gtk.PopoverMenu.new_from_model(menu)
@@ -157,3 +164,14 @@ def _play_now(track, app) -> None:
         return
     app.queue.replace([track], start_index=0)
     app.player.play(track)
+
+
+def _toggle_download(track, app, downloaded: bool) -> None:
+    if app.offline is None:
+        return
+    if downloaded:
+        app.offline.remove(track.id)
+        app.show_toast(f"Removed download of {track.name}")
+        return
+    app.offline.download([track])
+    app.show_toast(f"Downloading {track.name}…")

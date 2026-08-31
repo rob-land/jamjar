@@ -462,6 +462,8 @@ Songs view is a `GtkColumnView` on desktop (Title / Artist / Album / Duration co
 
 **Radio stations** (`radio.py`): Jellyfin has no sonic analysis, so stations are built from the vocabulary it does expose — `/Items/Filters` genres and years plus user tags — and played through `/Items?SortBy=Random` with `Genres` / `Years` / `Tags` / `Filters=IsFavorite`. Moods are a curated genre grouping narrowed to the genres the library actually has. Seeded radio (track / album / artist context menus) uses `/Items/{id}/InstantMix`. `RadioSession` keeps a station endless by appending a fresh batch whenever the queue runs low; ownership is tracked through `PlayQueue.origin`, so playing anything else ends the station without extra teardown.
 
+**Offline downloads** (`offline.py`): `/Audio/{id}/universal?static=true` into the user cache dir, with a SQLite index that stores track metadata beside the file so the Downloaded page renders without a server. `Player.uri_for` prefers a local file over a stream on every path — play, gapless prefetch, crossfade prime, restore — which is what makes a downloaded queue keep working when the network goes away. Downloads run serially so they don't starve the track that's playing.
+
 **Sleep timer**: GSettings-backed dropdown (15/30/60 min, end of track, end of album).
 
 **Cast / external output**: Surface PulseAudio/Pipewire sinks via `pactl` or the GVC GIR; on a NexDock, audio just follows the default sink. (No AirPlay/Chromecast in v1.)

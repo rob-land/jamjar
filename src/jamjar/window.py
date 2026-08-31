@@ -14,6 +14,7 @@ if TYPE_CHECKING:
 
 from .views.album import AlbumPage
 from .views.artist import ArtistPage
+from .views.downloaded import DownloadedPage
 from .views.history import HistoryPage
 from .views.home import HomePage
 from .views.library import LibraryPage
@@ -205,17 +206,7 @@ class JamjarWindow(Adw.ApplicationWindow):
         if name == "queue":
             return QueuePage(self.app, self)
         if name == "downloaded":
-            page = Adw.NavigationPage(title="Downloaded")
-            tv = Adw.ToolbarView()
-            header = Adw.HeaderBar()
-            tv.add_top_bar(header)
-            tv.set_content(Adw.StatusPage(
-                title="Downloads coming in v0.3",
-                description="Make albums and playlists available offline.",
-                icon_name="folder-download-symbolic",
-            ))
-            page.set_child(tv)
-            return page
+            return DownloadedPage(self.app, self)
         return None
 
     def show_now_playing(self) -> None:

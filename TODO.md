@@ -192,8 +192,28 @@ and pause/resume ramps over 200 ms. Volume is a master level times a
 per-deck fade gain, so the volume slider, MPRIS and the sleep timer are
 untouched by any of it.
 
-### 13. Offline downloads
-Per `DESIGN.md` v0.3. Symfonium's killer feature for phone users.
+### 13. Offline downloads — done (manual)
+`offline.py` was written but never wired to anything. Now: **Download** on
+the track menu, **Download Album** on the album menu, and a real
+**Downloaded** page listing what's on disk with sizes, a total, per-row
+removal and play-from-here.
+
+The index stores track metadata alongside the file, so the Downloaded
+page renders with no server at all — the whole point of the feature. The
+player resolves every URI through `Player.uri_for`, which prefers a
+local file and touches the index for LRU, so a downloaded track plays
+from disk on every path (play, gapless prefetch, crossfade prime,
+restore). Downloads are serial: parallel fetches on cellular make the
+track that's actually playing stutter.
+
+Still open:
+- Automatic sync rules ("keep favourites offline", "keep recently
+  played"). `OfflineIndex.evict_lru` exists for exactly that budget —
+  it's deliberately unused for manual downloads, since evicting a file
+  the user explicitly asked for would be wrong.
+- An offline *mode*: detecting an unreachable server and falling back to
+  the downloaded library instead of showing errors.
+- Download progress beyond the Downloaded page's header subtitle.
 
 ### 14. Smart playlists / saved searches — partial
 The queue page menu has **Save as Playlist…**, which turns whatever is

@@ -81,6 +81,10 @@ def _build_popover(album, app, window, parent) -> Gtk.PopoverMenu:
     add("toggle-favorite",
         lambda: _toggle_favorite(album, app),
         enabled=app.client is not None)
+    add("download",
+        lambda: _with_tracks(album, app,
+                             lambda tracks: _download(tracks, album, app)),
+        enabled=app.offline is not None)
 
     menu = Gio.Menu()
     play_section = Gio.Menu()
@@ -96,6 +100,7 @@ def _build_popover(album, app, window, parent) -> Gtk.PopoverMenu:
 
     fav_section = Gio.Menu()
     fav_section.append(fav_label, "albummenu.toggle-favorite")
+    fav_section.append("Download Album", "albummenu.download")
     menu.append_section(None, fav_section)
 
     popover = Gtk.PopoverMenu.new_from_model(menu)
@@ -130,3 +135,17 @@ def _toggle_favorite(album, app) -> None:
         return
     new_state = not bool(album.user_data.get("IsFavorite"))
     commit_favorite(app.client, album, new_state, app.runner, app=app)
+
+
+def _download(tracks, album, app) -> None:
+    if app.offline is None or not tracks:
+        return
+    pending = [t for t in tracks if not app.offline.is_offline(t.id)]
+    if not pending:
+        app.show_toast(f"{album.name} is already downloaded")
+        return
+    app.offline.download(
+        pending,
+        on_done=lambda: app.show_toast(f"Downloaded {album.name}"),
+    )
+    app.show_toast(f"Downloading {album.name} ({len(pending)} tracks)…")

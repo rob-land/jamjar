@@ -21,6 +21,7 @@ from __future__ import annotations
 import logging
 import math
 import time
+from pathlib import Path
 
 from gi.repository import GLib, GObject, Gst
 
@@ -143,6 +144,9 @@ class Player(GObject.Object):
         self._crossfade_steps = 1
         # Seek to apply once a preloaded (restored) track has prerolled.
         self._pending_seek: float = 0.0
+        # Set once a session exists; consulted before every stream URL so
+        # a downloaded track plays from disk (and works with no network).
+        self.offline = None
 
     # ------- deck helpers -------
 
@@ -225,6 +229,16 @@ class Player(GObject.Object):
                 return
             deck.pipeline.set_property("audio-filter", filt)
 
+    def uri_for(self, track: Track) -> str:
+        """Local file if the track is downloaded, otherwise the stream."""
+        if self.offline is not None:
+            path = self.offline.local_path(track.id)
+            if path and Path(path).exists():
+                self.offline.index.touch(track.id)
+                return Gst.filename_to_uri(path)
+        return self.queue.client.stream_url(
+            track, codec=self._codec, max_bitrate=self._max_bitrate)
+
     def set_crossfade(self, seconds: float) -> None:
         self._crossfade_seconds = max(0.0, min(float(seconds), MAX_CROSSFADE_SECONDS))
 
@@ -247,9 +261,7 @@ class Player(GObject.Object):
             log.debug("play() with no current track")
             return
         self._abort_crossfade()
-        url = self.queue.client.stream_url(
-            track, codec=self._codec, max_bitrate=self._max_bitrate
-        )
+        url = self.uri_for(track)
         log.debug("playing %s -> %s", track.id, url)
         self._gapless_next = None
         self._pending_seek = 0.0
@@ -276,9 +288,7 @@ class Player(GObject.Object):
         deck = self._deck
         self._cancel_ramp(deck)
         deck.pipeline.set_state(Gst.State.NULL)
-        deck.pipeline.set_property(
-            "uri", self.queue.client.stream_url(
-                track, codec=self._codec, max_bitrate=self._max_bitrate))
+        deck.pipeline.set_property("uri", self.uri_for(track))
         deck.gain = 1.0
         self._apply_gain(deck)
         self._gapless_next = None
@@ -430,9 +440,7 @@ class Player(GObject.Object):
         self._cancel_ramp(outgoing)
         self._cancel_ramp(incoming)
 
-        url = self.queue.client.stream_url(
-            nxt, codec=self._codec, max_bitrate=self._max_bitrate
-        )
+        url = self.uri_for(nxt)
         incoming.pipeline.set_state(Gst.State.NULL)
         incoming.pipeline.set_property("uri", url)
         incoming.gain = 0.0
@@ -524,10 +532,7 @@ class Player(GObject.Object):
             return
         if self.queue.repeat == RepeatMode.ONE and self.queue.current:
             self._gapless_next = self.queue.current
-            url = self.queue.client.stream_url(
-                self.queue.current, codec=self._codec, max_bitrate=self._max_bitrate
-            )
-            deck.pipeline.set_property("uri", url)
+            deck.pipeline.set_property("uri", self.uri_for(self.queue.current))
             GLib.idle_add(self._complete_transition)
             return
         nxt = self.queue.peek_next()
@@ -541,10 +546,7 @@ class Player(GObject.Object):
             # one would start the next track twice.
             return
         self._gapless_next = nxt
-        url = self.queue.client.stream_url(
-            nxt, codec=self._codec, max_bitrate=self._max_bitrate
-        )
-        deck.pipeline.set_property("uri", url)
+        deck.pipeline.set_property("uri", self.uri_for(nxt))
         # EOS may not arrive for a gapless handoff; sync on the GTK thread
         # as soon as the next URI is queued.
         GLib.idle_add(self._complete_transition)
