@@ -52,6 +52,7 @@ class JamjarWindow(Adw.ApplicationWindow):
     now_playing_bar  = Gtk.Template.Child("now_playing_bar")
     content_page     = Gtk.Template.Child("content_page")
     toast_overlay    = Gtk.Template.Child("toast_overlay")
+    offline_banner   = Gtk.Template.Child("offline_banner")
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -61,6 +62,10 @@ class JamjarWindow(Adw.ApplicationWindow):
         self._shortcuts_dialog: Adw.ShortcutsDialog | None = None
         self._install_shortcuts_dialog()
         self._build_sidebar()
+
+        self.app.connect("connectivity-changed", self._on_connectivity_changed)
+        self.offline_banner.connect("button-clicked",
+                                    lambda *_: self._show_page("downloaded"))
 
         self.connect("close-request", self._on_close_request)
 
@@ -243,6 +248,10 @@ class JamjarWindow(Adw.ApplicationWindow):
         page = self._pages.get("search")
         if isinstance(page, SearchPage):
             page.focus_entry()
+
+    def _on_connectivity_changed(self, _app, online: bool) -> None:
+        """One banner instead of a toast per failed request."""
+        self.offline_banner.set_revealed(not online)
 
     def open_search(self, query: str = "") -> None:
         """Show the search page, optionally prefilled — the GNOME Shell

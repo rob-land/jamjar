@@ -194,7 +194,7 @@ class LibraryPage(Adw.NavigationPage):
                 log.warning("library filters fetch failed: %s", e)
                 options = ([], [])
                 if self.app.show_toast:
-                    self.app.show_toast(_("Couldn't load filters."))
+                    self.app.show_network_error(_("Couldn't load filters."))
             self._filters_cache[name] = options
             GLib.idle_add(self._rebuild_filter_popover)
 

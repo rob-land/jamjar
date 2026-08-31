@@ -41,6 +41,8 @@ class JamjarApplication(Adw.Application):
         # update their visual without each having to round-trip through
         # the server. Args: (item_id, is_favorite).
         "favorite-changed": (GObject.SignalFlags.RUN_FIRST, None, (str, bool)),
+        # The server became unreachable, or came back. Args: (online,).
+        "connectivity-changed": (GObject.SignalFlags.RUN_FIRST, None, (bool,)),
     }
 
     def __init__(self) -> None:
@@ -64,6 +66,7 @@ class JamjarApplication(Adw.Application):
         self.mpris: MprisService | None = None
         self.radio: RadioSession | None = None
         self.offline: OfflineManager | None = None
+        self.online = True
         self.sleep_timer = SleepTimer()
         self.search_provider = SearchProvider(self)
         self._holding = False
@@ -117,8 +120,9 @@ class JamjarApplication(Adw.Application):
         """Called after a successful login or token restore."""
         self.client = client
         client.on_unauthorized = self._on_client_unauthorized
+        client.on_reachability_changed = self._on_reachability_changed
         self.runner.submit(client.delete_expired_cache())
-        self.library = Library(client, self.runner, on_error=self.show_toast)
+        self.library = Library(client, self.runner, on_error=self.show_network_error)
         self.queue = PlayQueue(client)
         self.player = Player(self.queue)
         self.scrobbler = Scrobbler(client, self.player, self.queue, self.runner)
@@ -191,6 +195,32 @@ class JamjarApplication(Adw.Application):
             self.offline = None
         self._release_hold()
         self._update_session_actions()
+
+    # ------- connectivity -------
+
+    def _on_reachability_changed(self, online: bool) -> None:
+        # Called from the asyncio worker thread.
+        GLib.idle_add(self._apply_connectivity, online)
+
+    def _apply_connectivity(self, online: bool) -> bool:
+        if online == self.online:
+            return False
+        self.online = online
+        log.info("server %s", "reachable again" if online else "unreachable")
+        self.emit("connectivity-changed", online)
+        return False
+
+    def show_network_error(self, message: str) -> None:
+        """Report a failed background fetch — silently while offline.
+
+        Losing the server fails every open request at once; the offline
+        banner says so once, and four toasts saying it again help nobody.
+        User-initiated actions keep using `show_toast`, because there the
+        toast is the answer to something the user just did.
+        """
+        if not self.online:
+            return
+        self.show_toast(message)
 
     # ------- playback state persistence -------
 

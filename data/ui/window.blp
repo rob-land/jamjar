@@ -57,6 +57,12 @@ template $JamjarWindow: Adw.ApplicationWindow {
           orientation: vertical;
           spacing: 0;
 
+          Adw.Banner offline_banner {
+            title: _("Offline — downloaded music still plays");
+            button-label: _("Downloads");
+            revealed: false;
+          }
+
           Adw.NavigationView nav_view {
             vexpand: true;
           }

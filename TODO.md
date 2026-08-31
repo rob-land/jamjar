@@ -211,8 +211,12 @@ Still open:
   played"). `OfflineIndex.evict_lru` exists for exactly that budget —
   it's deliberately unused for manual downloads, since evicting a file
   the user explicitly asked for would be wrong.
-- An offline *mode*: detecting an unreachable server and falling back to
-  the downloaded library instead of showing errors.
+- An offline *mode* — **done**: the client reports reachability on
+  transitions only, the window shows a banner ("Offline — downloaded
+  music still plays") with a shortcut to Downloads, and background
+  fetch failures go through `show_network_error`, which stays quiet
+  while offline. User-initiated actions still toast, because there the
+  toast answers something the user just did.
 - Download progress beyond the Downloaded page's header subtitle.
 
 ### 14. Smart playlists / saved searches — partial

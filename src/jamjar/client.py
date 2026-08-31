@@ -35,6 +35,17 @@ from .models import (
 
 log = logging.getLogger(__name__)
 
+# Failures that mean "the server isn't there" rather than "the server
+# said no" — an HTTP error is a working connection, and shouldn't put
+# the app into offline mode.
+CONNECTION_ERRORS = (
+    aiohttp.ClientConnectorError,
+    aiohttp.ClientOSError,
+    aiohttp.ServerDisconnectedError,
+    aiohttp.ServerTimeoutError,
+    asyncio.TimeoutError,
+)
+
 
 class Unauthorized(Exception):
     """Raised when the Jellyfin server returns 401.
@@ -105,6 +116,10 @@ class JellyfinClient:
         # May be invoked many times in quick succession (parallel requests
         # all 401ing), so the handler must be idempotent.
         self.on_unauthorized = on_unauthorized
+        # Optional sink for "server unreachable" / "server back" edges,
+        # same threading contract as on_unauthorized.
+        self.on_reachability_changed: Callable[[bool], None] | None = None
+        self._reachable = True
 
     async def __aenter__(self) -> JellyfinClient:
         if self._session is None:
@@ -153,19 +168,40 @@ class JellyfinClient:
             await cache.delete_expired_responses()
             log.debug("pruned expired HTTP cache entries")
 
+    def _note_reachable(self, reachable: bool) -> None:
+        """Report server reachability, on transitions only.
+
+        Called from the asyncio worker thread; the handler is expected to
+        marshal to the GTK loop itself.
+        """
+        if reachable == self._reachable:
+            return
+        self._reachable = reachable
+        if self.on_reachability_changed is not None:
+            try:
+                self.on_reachability_changed(reachable)
+            except Exception:
+                log.exception("on_reachability_changed handler raised")
+
     async def _get_json(self, path: str, params: dict | None = None, *,
                         expire_after: timedelta | int | None = None,
                         refresh: bool = False) -> Any:
-        async with self.session.get(
-            f"{self.base}{path}",
-            params=params,
-            headers=self.headers,
-            expire_after=expire_after,
-            refresh=refresh,
-        ) as r:
-            self._check_auth(r)
-            r.raise_for_status()
-            return await r.json()
+        try:
+            async with self.session.get(
+                f"{self.base}{path}",
+                params=params,
+                headers=self.headers,
+                expire_after=expire_after,
+                refresh=refresh,
+            ) as r:
+                self._check_auth(r)
+                r.raise_for_status()
+                data = await r.json()
+        except CONNECTION_ERRORS:
+            self._note_reachable(False)
+            raise
+        self._note_reachable(True)
+        return data
 
     async def _post_json(self, path: str, body: dict | None = None,
                          params: dict | None = None) -> Any:

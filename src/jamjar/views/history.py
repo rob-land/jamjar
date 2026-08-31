@@ -46,7 +46,7 @@ class HistoryPage(Adw.NavigationPage):
                 log.warning("history load failed: %s", e)
                 tracks = []
                 if self.app.show_toast:
-                    self.app.show_toast("Couldn't load play history.")
+                    self.app.show_network_error("Couldn't load play history.")
             GLib.idle_add(lambda: (self._apply(tracks), False)[1])
 
         self.app.runner.submit(runme()).add_done_callback(done)
