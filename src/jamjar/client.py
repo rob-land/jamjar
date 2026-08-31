@@ -522,6 +522,28 @@ class JellyfinClient:
         return [track_from_json(item) for item in data.get("Items", [])
                 if item.get("Type") == "Audio"]
 
+    async def similar_items(self, item_id: str, limit: int = 12) -> list:
+        """Albums / artists Jellyfin considers similar to `item_id`.
+
+        The endpoint answers for either seed type and mixes the results,
+        so the caller gets `Album` and `Artist` objects back and filters
+        for what its shelf shows.
+        """
+        data = await self._get_json(f"/Items/{item_id}/Similar", params={
+            "userId":                 self.user_id,
+            "limit":                  limit,
+            "Fields":                 "ProductionYear,AlbumArtists",
+            "EnableTotalRecordCount": "false",
+        }, expire_after=METADATA_TTL)
+        out: list = []
+        for item in data.get("Items", []):
+            kind = item.get("Type")
+            if kind == "MusicAlbum":
+                out.append(album_from_json(item))
+            elif kind == "MusicArtist":
+                out.append(artist_from_json(item))
+        return out
+
     async def search(self, query: str, limit: int = 24) -> list[SearchHit]:
         data = await self._get_json("/Search/Hints", params={
             "userId":           self.user_id,

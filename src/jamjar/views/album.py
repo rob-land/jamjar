@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING
 
-from gi.repository import Adw, Gtk
+from gi.repository import Adw, GLib, Gtk
 
 from ._common import (
+    album_tile,
     apply_favorite_visual,
     commit_favorite,
     escape_markup,
@@ -16,11 +18,14 @@ from ._common import (
     make_link_label,
     open_artist_by_id,
 )
+from ..models import Album
 from .track_menu import install_track_menu
 
 if TYPE_CHECKING:
     from ..application import JamjarApplication
     from ..window import JamjarWindow
+
+log = logging.getLogger(__name__)
 
 
 @Gtk.Template(resource_path="/land/rob/jamjar/album-page.ui")
@@ -36,6 +41,8 @@ class AlbumPage(Adw.NavigationPage):
     favorite_button     = Gtk.Template.Child()
     tracks_spinner      = Gtk.Template.Child()
     tracks_list         = Gtk.Template.Child()
+    similar_section     = Gtk.Template.Child()
+    similar_row         = Gtk.Template.Child()
 
     def __init__(self, app: JamjarApplication, window: JamjarWindow, album) -> None:
         super().__init__()
@@ -76,6 +83,7 @@ class AlbumPage(Adw.NavigationPage):
         self.connect("unrealize", self._on_unrealize)
 
         app.library.album_tracks(album.id, self._on_tracks_loaded)
+        self._load_similar()
 
     def _sync_favorite(self, is_favorite: bool) -> None:
         self._suppress_favorite = True
@@ -146,3 +154,35 @@ class AlbumPage(Adw.NavigationPage):
         self.app.queue.shuffle = True
         self.app.queue.replace(self.tracks, start_index=0)
         self.app.player.play(self.app.queue.current)
+
+    def _load_similar(self) -> None:
+        """Fill the "Similar" shelf. Best-effort: a server without the
+        data (or an item it can't match) just leaves the shelf hidden."""
+        if self.app.client is None:
+            return
+        client = self.app.client
+        seed_id = self.album.id
+
+        async def runme():
+            return await client.similar_items(seed_id, limit=12)
+
+        def done(future):
+            try:
+                items = future.result()
+            except Exception as e:
+                log.info("similar items unavailable for %s: %s", seed_id, e)
+                return
+            GLib.idle_add(self._apply_similar, items)
+
+        self.app.runner.submit(runme()).add_done_callback(done)
+
+    def _apply_similar(self, items) -> bool:
+        matching = [i for i in items if isinstance(i, Album)]
+        if not matching:
+            return False
+        for child in list(self.similar_row):
+            self.similar_row.remove(child)
+        for item in matching:
+            self.similar_row.append(album_tile(item, self.app, self.window))
+        self.similar_section.set_visible(True)
+        return False

@@ -43,3 +43,7 @@
 .link-label:hover {
   text-decoration: underline;
 }
+
+.artist-portrait {
+  border-radius: 9999px;
+}

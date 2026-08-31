@@ -98,6 +98,58 @@ def start_instant_mix(item, app, *, kind: str = "track") -> None:
     app.radio.start(mix_station(item, kind_label=kind))
 
 
+def _shelf_tile(picture: Gtk.Picture, title: str, subtitle: str | None,
+                on_click) -> Gtk.Button:
+    box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+    box.append(picture)
+    label = Gtk.Label(label=title, ellipsize=3, xalign=0)
+    label.add_css_class("heading")
+    box.append(label)
+    if subtitle is not None:
+        sub = Gtk.Label(label=subtitle, ellipsize=3, xalign=0)
+        sub.add_css_class("dim-label")
+        sub.add_css_class("caption")
+        box.append(sub)
+
+    # valign=START so the button doesn't stretch to the row's height
+    # (which would make the hover highlight cover empty space below).
+    button = Gtk.Button(width_request=140, child=box, valign=Gtk.Align.START)
+    button.add_css_class("flat")
+    button.connect("clicked", lambda *_: on_click())
+    return button
+
+
+def _shelf_picture(app, item_id: str, image_tag: str | None,
+                   size: int = 128) -> Gtk.Picture:
+    picture = Gtk.Picture(content_fit=Gtk.ContentFit.COVER,
+                          width_request=size, height_request=size)
+    picture.add_css_class("cover")
+    if image_tag:
+        url = app.client.cover_url(item_id, image_tag, max_width=size * 2)
+        load_remote_image_async(url, app.client.headers, picture,
+                                app.client.session, app.runner)
+    return picture
+
+
+def album_tile(album, app, window) -> Gtk.Widget:
+    """Cover + title + artist tile for a horizontal album shelf."""
+    from .album_menu import install_album_menu
+
+    picture = _shelf_picture(app, album.id, album.image_tag)
+    button = _shelf_tile(picture, album.name, album.primary_artist,
+                         lambda: window.open_album(album))
+    install_album_menu(button, lambda al=album: al, app, window)
+    return button
+
+
+def artist_tile(artist, app, window) -> Gtk.Widget:
+    """Round portrait tile for a horizontal artist shelf."""
+    picture = _shelf_picture(app, artist.id, artist.image_tag)
+    picture.add_css_class("artist-portrait")
+    return _shelf_tile(picture, artist.name, None,
+                       lambda: window.open_artist(artist))
+
+
 def fallback_icon(name: str = "audio-x-generic-symbolic", pixel_size: int = 64) -> Gtk.Image:
     img = Gtk.Image.new_from_icon_name(name)
     img.set_pixel_size(pixel_size)

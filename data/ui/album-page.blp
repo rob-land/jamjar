@@ -129,6 +129,32 @@ template $JamjarAlbumPage: Adw.NavigationPage {
             styles ["boxed-list"]
             selection-mode: none;
           }
+
+          Box similar_section {
+            orientation: vertical;
+            spacing: 6;
+            margin-top: 12;
+            // Revealed once the server returns something similar.
+            visible: false;
+
+            Label {
+              label: _("Similar Albums");
+              xalign: 0;
+
+              styles ["heading"]
+            }
+
+            ScrolledWindow {
+              vscrollbar-policy: never;
+              propagate-natural-height: true;
+
+              child: Box similar_row {
+                orientation: horizontal;
+                spacing: 12;
+              };
+            }
+          }
+
         };
       };
     };

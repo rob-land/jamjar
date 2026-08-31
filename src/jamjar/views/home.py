@@ -7,8 +7,7 @@ from typing import TYPE_CHECKING
 
 from gi.repository import Adw, GLib, Gtk
 
-from ._common import load_remote_image_async
-from .album_menu import install_album_menu
+from ._common import album_tile, load_remote_image_async
 from .track_menu import install_track_menu
 
 if TYPE_CHECKING:
@@ -98,32 +97,7 @@ class HomePage(Adw.NavigationPage):
             row.append(tile_builder(payload))
 
     def _tile_for_album(self, album) -> Gtk.Widget:
-        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
-        picture = Gtk.Picture(content_fit=Gtk.ContentFit.COVER,
-                              width_request=128, height_request=128)
-        picture.add_css_class("cover")
-        if album.image_tag:
-            url = self.app.client.cover_url(album.id, album.image_tag,
-                                            max_width=256)
-            load_remote_image_async(url, self.app.client.headers, picture,
-                                    self.app.client.session, self.app.runner)
-        box.append(picture)
-        title = Gtk.Label(label=album.name, ellipsize=3, xalign=0)
-        title.add_css_class("heading")
-        box.append(title)
-        artist = Gtk.Label(label=album.primary_artist, ellipsize=3, xalign=0)
-        artist.add_css_class("dim-label")
-        artist.add_css_class("caption")
-        box.append(artist)
-
-        # valign=START so the button doesn't stretch to the row's height
-        # (which would make the hover highlight cover empty space below).
-        button = Gtk.Button(width_request=140, child=box,
-                            valign=Gtk.Align.START)
-        button.add_css_class("flat")
-        button.connect("clicked", lambda *_: self.window.open_album(album))
-        install_album_menu(button, lambda al=album: al, self.app, self.window)
-        return button
+        return album_tile(album, self.app, self.window)
 
     def _tile_for_track(self, track) -> Gtk.Widget:
         box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)

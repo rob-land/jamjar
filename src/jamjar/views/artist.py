@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING
 
-from gi.repository import Adw, Gtk
+from gi.repository import Adw, GLib, Gtk
 
+from ..models import Artist
 from ._common import (
     apply_favorite_visual,
+    artist_tile,
     clear_remote_image,
     commit_favorite,
     load_remote_image_async,
@@ -18,6 +21,8 @@ from .album_menu import install_album_menu
 if TYPE_CHECKING:
     from ..application import JamjarApplication
     from ..window import JamjarWindow
+
+log = logging.getLogger(__name__)
 
 
 @Gtk.Template(resource_path="/land/rob/jamjar/artist-page.ui")
@@ -31,6 +36,8 @@ class ArtistPage(Adw.NavigationPage):
     favorite_button     = Gtk.Template.Child()
     albums_spinner      = Gtk.Template.Child()
     artist_albums_grid  = Gtk.Template.Child()
+    similar_section     = Gtk.Template.Child()
+    similar_row         = Gtk.Template.Child()
 
     def __init__(self, app: JamjarApplication, window: JamjarWindow, artist) -> None:
         super().__init__()
@@ -64,6 +71,7 @@ class ArtistPage(Adw.NavigationPage):
         self.artist_albums_grid.connect("activate", self._activated)
 
         app.library.artist_albums(artist.id, self._on_albums_loaded)
+        self._load_similar()
 
     def _on_albums_loaded(self, albums: list) -> None:
         from ..library import _Wrapper
@@ -123,3 +131,35 @@ class ArtistPage(Adw.NavigationPage):
 
     def _on_start_radio(self, _button) -> None:
         start_instant_mix(self.artist, self.app, kind="artist")
+
+    def _load_similar(self) -> None:
+        """Fill the "Similar Artists" shelf. Best-effort: a server without
+        the data (or an artist it can't match) leaves the shelf hidden."""
+        if self.app.client is None:
+            return
+        client = self.app.client
+        seed_id = self.artist.id
+
+        async def runme():
+            return await client.similar_items(seed_id, limit=12)
+
+        def done(future):
+            try:
+                items = future.result()
+            except Exception as e:
+                log.info("similar artists unavailable for %s: %s", seed_id, e)
+                return
+            GLib.idle_add(self._apply_similar, items)
+
+        self.app.runner.submit(runme()).add_done_callback(done)
+
+    def _apply_similar(self, items) -> bool:
+        matching = [i for i in items if isinstance(i, Artist)]
+        if not matching:
+            return False
+        for child in list(self.similar_row):
+            self.similar_row.remove(child)
+        for item in matching:
+            self.similar_row.append(artist_tile(item, self.app, self.window))
+        self.similar_section.set_visible(True)
+        return False
