@@ -327,7 +327,7 @@ Notable: `--talk-name=org.freedesktop.secrets` for libsecret access, and the two
 - **v0.1 (shipped)** — Discovery, both auth flows, library browsing (Albums/Artists/Songs/Playlists), basic playback, queue, MPRIS, scrobbling.
 - **v0.2 (in progress)** — Search ✅, lyrics ✅ (with synced highlighting + auto-scroll + click-to-seek), favorites ✅ (with cross-surface sync), sleep timer ✅, volume slider ✅, jump-to-letter ✅, image cache ✅, paginated library ✅, recently played + suggestions ✅, track + album context menus ✅, clickable artist/album labels ✅, GNOME HIG polish (shortcuts overlay, symbolic icon, header search, empty states, error toasts, screenshots/branding in metainfo) ✅. Still open: drag-to-reorder queue, playlist editing, sort/filter on Library pages, up-next preview popover, dedicated history page, JSON cache + manual refresh.
 - **v0.2 additions** — Crossfade (dual-deck `playbin3`) ✅, radio stations by mood / decade / style / tag with endless refill ✅.
-- **v0.3** — Offline downloads, multi-server switching, ReplayGain UI, ListenBrainz passthrough, Phosh lockscreen artwork polish, GNOME Shell search provider.
+- **v0.3** — Offline downloads, multi-server switching, ReplayGain UI, ListenBrainz passthrough, Phosh lockscreen artwork polish. GNOME Shell search provider ✅, "Play On…" device handover ✅ (Jellyfin `/Sessions`, in place of UPnP casting).
 - **v0.4** — Cast support (UPnP/DLNA via `gupnp`), "driving" view for the NexDock dock, smart playlists.
 
 ---

@@ -45,6 +45,13 @@ if appstreamcli.found()
   )
 endif
 
+# GNOME Shell search provider. Shell reads this from the exported
+# datadir and talks to the object the app registers on its own bus name.
+install_data(
+  'land.rob.jamjar.search-provider.ini',
+  install_dir: datadir / 'gnome-shell' / 'search-providers',
+)
+
 # GSettings schema
 install_data(
   'land.rob.jamjar.gschema.xml',

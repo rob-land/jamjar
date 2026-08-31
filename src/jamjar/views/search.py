@@ -171,6 +171,15 @@ class SearchPage(Adw.NavigationPage):
         row.add_controller(lp)
 
     def _on_row_activated(self, _row, hit) -> None:
+        self.activate_hit(hit)
+
+    def set_query(self, text: str) -> None:
+        """Prefill the entry — used when a search arrives from outside."""
+        self.search_entry.set_text(text)
+        self.search_entry.set_position(-1)
+
+    def activate_hit(self, hit) -> None:
+        """Open (or play) a search hit. Also the shell provider's entry."""
         if self.app.client is None:
             return
 

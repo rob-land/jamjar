@@ -17,6 +17,7 @@ from .player import Player
 from .queue import PlayQueue
 from .radio import RadioSession
 from .scrobble import Scrobbler
+from .searchprovider import SearchProvider
 from .secrets import clear_token, lookup_token
 from .sleep_timer import SleepTimer
 
@@ -62,6 +63,7 @@ class JamjarApplication(Adw.Application):
         self.mpris: MprisService | None = None
         self.radio: RadioSession | None = None
         self.sleep_timer = SleepTimer()
+        self.search_provider = SearchProvider(self)
         self._holding = False
         self._settings_handlers: list[int] = []
         self._player_state_handler: int | None = None
@@ -80,6 +82,16 @@ class JamjarApplication(Adw.Application):
         self._apply_color_scheme()
         self._load_css()
         imagecache.schedule_prune()
+
+    def do_dbus_register(self, connection, object_path: str) -> bool:  # type: ignore[override]
+        # GNOME Shell talks to the search provider over the bus name
+        # GApplication already owns, so this is the whole registration.
+        self.search_provider.register(connection)
+        return Adw.Application.do_dbus_register(self, connection, object_path)
+
+    def do_dbus_unregister(self, connection, object_path: str) -> None:  # type: ignore[override]
+        self.search_provider.unregister(connection)
+        Adw.Application.do_dbus_unregister(self, connection, object_path)
 
     def do_activate(self) -> None:  # type: ignore[override]
         from .window import JamjarWindow

@@ -253,6 +253,21 @@ class JamjarWindow(Adw.ApplicationWindow):
         if isinstance(page, SearchPage):
             page.focus_entry()
 
+    def open_search(self, query: str = "") -> None:
+        """Show the search page, optionally prefilled — the GNOME Shell
+        search provider's "show all results" lands here."""
+        self.focus_search()
+        page = self._pages.get("search")
+        if isinstance(page, SearchPage) and query:
+            page.set_query(query)
+
+    def open_search_hit(self, hit) -> None:
+        """Open one result chosen in the Shell overview."""
+        self._show_page("search")
+        page = self._pages.get("search")
+        if isinstance(page, SearchPage):
+            page.activate_hit(hit)
+
     # ------- close behaviour -------
 
     def _on_window_key_pressed(self, _ctrl, keyval: int, _keycode: int,
