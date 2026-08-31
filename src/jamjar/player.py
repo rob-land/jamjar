@@ -147,6 +147,9 @@ class Player(GObject.Object):
         # Set once a session exists; consulted before every stream URL so
         # a downloaded track plays from disk (and works with no network).
         self.offline = None
+        # Seconds already skipped server-side on the current stream. Added
+        # to the pipeline's own position so the UI sees absolute time.
+        self._stream_offset = 0.0
 
     # ------- deck helpers -------
 
@@ -229,15 +232,28 @@ class Player(GObject.Object):
                 return
             deck.pipeline.set_property("audio-filter", filt)
 
-    def uri_for(self, track: Track) -> str:
-        """Local file if the track is downloaded, otherwise the stream."""
-        if self.offline is not None:
-            path = self.offline.local_path(track.id)
-            if path and Path(path).exists():
-                self.offline.index.touch(track.id)
-                return Gst.filename_to_uri(path)
+    def local_path(self, track: Track) -> str | None:
+        """The downloaded file for `track`, if there is one."""
+        if self.offline is None:
+            return None
+        path = self.offline.local_path(track.id)
+        if path and Path(path).exists():
+            return path
+        return None
+
+    def uri_for(self, track: Track, start_seconds: float = 0.0) -> str:
+        """Local file if the track is downloaded, otherwise the stream.
+
+        `start_seconds` is baked into a stream URL (server-side seek);
+        local files ignore it because they seek properly.
+        """
+        path = self.local_path(track)
+        if path is not None:
+            self.offline.index.touch(track.id)
+            return Gst.filename_to_uri(path)
         return self.queue.client.stream_url(
-            track, codec=self._codec, max_bitrate=self._max_bitrate)
+            track, codec=self._codec, max_bitrate=self._max_bitrate,
+            start_seconds=start_seconds)
 
     def set_crossfade(self, seconds: float) -> None:
         self._crossfade_seconds = max(0.0, min(float(seconds), MAX_CROSSFADE_SECONDS))
@@ -265,6 +281,7 @@ class Player(GObject.Object):
         log.debug("playing %s -> %s", track.id, url)
         self._gapless_next = None
         self._pending_seek = 0.0
+        self._stream_offset = 0.0
         deck = self._deck
         self._cancel_ramp(deck)
         deck.pipeline.set_state(Gst.State.NULL)
@@ -288,17 +305,23 @@ class Player(GObject.Object):
         deck = self._deck
         self._cancel_ramp(deck)
         deck.pipeline.set_state(Gst.State.NULL)
-        deck.pipeline.set_property("uri", self.uri_for(track))
+        position = max(0.0, position)
+        is_local = self.local_path(track) is not None
+        # A local file seeks properly; a stream may not, so the offset
+        # goes to the server instead.
+        deck.pipeline.set_property(
+            "uri", self.uri_for(track, 0.0 if is_local else position))
         deck.gain = 1.0
         self._apply_gain(deck)
         self._gapless_next = None
+        self._stream_offset = 0.0 if is_local else position
         # A seek only sticks once the pipeline has prerolled, which is
         # what async-done announces.
-        self._pending_seek = max(0.0, position)
+        self._pending_seek = position if is_local else 0.0
         deck.pipeline.set_state(Gst.State.PAUSED)
         self._notify_track_started(track)
-        if self._pending_seek:
-            self.emit("position-changed", self._pending_seek)
+        if position:
+            self.emit("position-changed", position)
 
     def _on_async_done(self, _bus, _msg, deck: _Deck) -> None:
         if self._pending_seek <= 0 or deck is not self._deck:
@@ -344,6 +367,7 @@ class Player(GObject.Object):
         self._abort_crossfade()
         self._gapless_next = None
         self._pending_seek = 0.0
+        self._stream_offset = 0.0
         for deck in self._decks:
             self._cancel_ramp(deck)
             deck.pipeline.set_state(Gst.State.NULL)
@@ -385,31 +409,66 @@ class Player(GObject.Object):
 
     def seek(self, seconds: float) -> None:
         self._abort_crossfade()
-        ns = int(max(0.0, seconds) * Gst.SECOND)
-        self._deck.pipeline.seek_simple(
+        seconds = max(0.0, seconds)
+        target = seconds - self._stream_offset
+        seekable = self._deck.pipeline.seek_simple(
             Gst.Format.TIME,
             Gst.SeekFlags.FLUSH | Gst.SeekFlags.ACCURATE,
-            ns,
-        )
+            int(max(0.0, target) * Gst.SECOND),
+        ) if target >= 0 else False
+
+        if not seekable:
+            # Jellyfin behind a proxy answers with Accept-Ranges: none and
+            # no Content-Length, and GStreamer cannot seek a stream it
+            # cannot range-request. Ask the server to start the stream at
+            # the target instead — the same trick the web client uses.
+            self._restart_at(seconds)
+            return
+
         # Push an immediate position update so the scrubber doesn't fight the
         # 500 ms poll until the user releases the slider.
         GLib.idle_add(self._emit_seek_position)
 
+    def _restart_at(self, seconds: float) -> None:
+        """Restart the current track from `seconds` using a server-side seek."""
+        track = self.queue.current
+        if track is None:
+            return
+        was_playing = self._state == Gst.State.PLAYING
+        deck = self._deck
+        self._cancel_ramp(deck)
+        deck.pipeline.set_state(Gst.State.NULL)
+        deck.pipeline.set_property("uri", self.uri_for(track, seconds))
+        self._stream_offset = seconds
+        deck.gain = 1.0
+        self._apply_gain(deck)
+        deck.pipeline.set_state(Gst.State.PLAYING if was_playing else Gst.State.PAUSED)
+        log.debug("server-side seek to %.1fs on %s", seconds, track.id)
+        self.emit("position-changed", seconds)
+
     def _emit_seek_position(self) -> bool:
-        ok, pos = self._deck.pipeline.query_position(Gst.Format.TIME)
-        if ok:
-            self.emit("position-changed", pos / Gst.SECOND)
+        self.emit("position-changed", self.position)
         return False
 
     @property
     def position(self) -> float:
         ok, pos = self._deck.pipeline.query_position(Gst.Format.TIME)
-        return pos / Gst.SECOND if ok else 0.0
+        return (pos / Gst.SECOND if ok else 0.0) + self._stream_offset
 
     @property
     def duration(self) -> float:
+        """Track length, from the pipeline or the item metadata.
+
+        A Jellyfin stream behind a proxy that strips Content-Length has
+        no queryable duration at all, so the metadata value is not a
+        nicety — without it the crossfade would never know when the end
+        was coming.
+        """
         ok, dur = self._deck.pipeline.query_duration(Gst.Format.TIME)
-        return dur / Gst.SECOND if ok else 0.0
+        if ok and dur > 0:
+            return dur / Gst.SECOND
+        track = self.queue.current
+        return track.duration_seconds if track is not None else 0.0
 
     @property
     def is_playing(self) -> bool:
@@ -452,6 +511,7 @@ class Player(GObject.Object):
         # and the scrobbler flip now rather than when the fade ends.
         self._active = 1 - self._active
         self._gapless_next = None
+        self._stream_offset = 0.0
         track = self.queue.advance(emit_current_changed=False)
         if track is None:
             # Queue moved underneath us — unwind and let EOS handle it.
@@ -567,6 +627,7 @@ class Player(GObject.Object):
             self.stop()
             return False
 
+        self._stream_offset = 0.0
         log.debug("gapless transition to %s", track.id)
         self._notify_track_started(track)
         self.queue.emit("queue-changed")
@@ -621,16 +682,13 @@ class Player(GObject.Object):
             self._tick_source = GLib.timeout_add(500, self._tick)
 
     def _tick(self) -> bool:
-        duration = 0.0
-        ok, pos = self._deck.pipeline.query_position(Gst.Format.TIME)
-        position = pos / Gst.SECOND if ok else 0.0
+        ok, _pos = self._deck.pipeline.query_position(Gst.Format.TIME)
+        position = self.position
         if ok:
             self.emit("position-changed", position)
-        ok, dur = self._deck.pipeline.query_duration(Gst.Format.TIME)
-        if ok:
-            duration = dur / Gst.SECOND
-            if duration != self._duration_emitted:
-                self._duration_emitted = duration
-                self.emit("duration-changed", duration)
+        duration = self.duration
+        if duration and duration != self._duration_emitted:
+            self._duration_emitted = duration
+            self.emit("duration-changed", duration)
         self._maybe_start_crossfade(position, duration)
         return True

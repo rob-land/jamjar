@@ -35,6 +35,9 @@ from .models import (
 
 log = logging.getLogger(__name__)
 
+# Jellyfin expresses positions in ticks: 1 tick = 100 ns.
+TICKS_PER_SECOND = 10_000_000
+
 # Failures that mean "the server isn't there" rather than "the server
 # said no" — an HTTP error is a working connection, and shouldn't put
 # the app into offline mode.
@@ -685,7 +688,16 @@ class JellyfinClient:
     # ------- URLs (synchronous helpers; safe to call from GTK thread) -------
 
     def stream_url(self, track: Track, *, codec: str = "copy",
-                   max_bitrate: int = 0, static: bool = False) -> str:
+                   max_bitrate: int = 0, static: bool = False,
+                   start_seconds: float = 0.0) -> str:
+        """URL for playing `track`.
+
+        `start_seconds` asks the server to begin the stream at an offset.
+        That's the only way to seek when the server answers with
+        `Accept-Ranges: none` and no Content-Length — a reverse proxy in
+        front of Jellyfin is enough to cause that — because GStreamer
+        can't seek a stream it can't range-request.
+        """
         params = {
             "api_key":          self.token,
             "userId":           self.user_id,
@@ -696,6 +708,8 @@ class JellyfinClient:
             params["maxStreamingBitrate"] = str(max_bitrate)
         if static:
             params["static"] = "true"
+        if start_seconds > 0:
+            params["startTimeTicks"] = str(int(start_seconds * TICKS_PER_SECOND))
         query = urllib.parse.urlencode(params)
         return f"{self.base}/Audio/{track.id}/universal?{query}"
 

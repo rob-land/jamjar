@@ -352,7 +352,24 @@ class Player(GObject.Object):
 
 ReplayGain is added by inserting an `rgvolume` element into a custom `audio-filter` bin (one element per deck — a GStreamer element belongs to a single pipeline). The transcode parameters in the stream URL come from preferences: codec (`opus`/`aac`/`flac`), max bitrate (96k → lossless), and `transcodingContainer`. On Wi-Fi default to lossless or `audioCodec=copy`; on mobile data default to 128k Opus.
 
-### 7.1 Crossfade — two decks
+### 7.1 Seeking and duration on unseekable streams
+
+Measured against the reference server: `/Audio/{id}/universal` comes back
+`HTTP/2 200`, `accept-ranges: none`, no `Content-Length` — with or without
+`static=true`. GStreamer needs range requests to seek and a length to
+compute a duration, so on that server `query_duration` returns 0 and
+`seek_simple` returns `False`. Two consequences the player has to handle:
+
+* **Duration** comes from `track.duration_seconds` whenever the pipeline
+  has none. This is load-bearing, not cosmetic: the crossfade arms off
+  "time remaining", so without it the feature never fires at all.
+* **Seeking** falls back to a server-side seek — the stream is restarted
+  with `startTimeTicks`, which is what the Jellyfin web client does.
+  `Player._stream_offset` records how much was skipped so `position`
+  stays absolute for the scrubber, MPRIS and the scrobbler. Local files
+  (offline downloads) seek normally and skip this path entirely.
+
+### 7.2 Crossfade — two decks
 
 A crossfade needs the outgoing and incoming tracks audible simultaneously, which one `playbin3` cannot do. `player.py` therefore owns two decks that alternate. The **active** deck is the one whose position, duration, state and metadata the rest of the app sees; the other sits at `NULL` except while fading out.
 

@@ -202,6 +202,7 @@ These are real bugs that ate hours on the Clicker project. Re-reading before mak
 7. **D-pad / button auto-repeat races** (relevant for the player's transport buttons too) — single `pressed` boolean to gate the repeat loop, not a counter.
 8. **Test at 360×720 early.** Adaptive bugs almost never show up at desktop widths and are obvious in portrait phone. Use `Adw.Breakpoint` with `max-width: 600sp`.
 9. **`flatpak-builder --arch=aarch64`** under QEMU works but is slow. For iteration, build x86_64 locally and only cross-build for release tags.
+10. **Jellyfin streams may not be seekable.** A server behind a reverse proxy can answer `/Audio/{id}/universal` with `Accept-Ranges: none` and no `Content-Length` (confirmed on the reference server). GStreamer then reports no duration and refuses `seek_simple`. So: never trust `query_duration` alone — fall back to `track.duration_seconds` — and treat a failed seek as normal, restarting the stream with `startTimeTicks` instead. `Player.duration`, `Player.seek` and `_restart_at` handle both cases; `_stream_offset` keeps reported positions absolute.
 
 ---
 
