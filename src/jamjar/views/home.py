@@ -25,6 +25,8 @@ class HomePage(Adw.NavigationPage):
     sidebar_toggle      = Gtk.Template.Child()
     home_refresh        = Gtk.Template.Child()
     recently_played_row = Gtk.Template.Child()
+    most_played_row     = Gtk.Template.Child()
+    most_played_section = Gtk.Template.Child()
     recently_added_row  = Gtk.Template.Child()
     suggested_row       = Gtk.Template.Child()
 
@@ -49,9 +51,11 @@ class HomePage(Adw.NavigationPage):
         if lib is None:
             return False
         lib.load_recently_played()
+        lib.load_most_played()
         lib.load_recently_added()
         lib.load_suggested()
         lib.recently_played.connect("items-changed", self._on_recently_played_changed)
+        lib.most_played.connect("items-changed", self._on_most_played_changed)
         lib.recently_added.connect("items-changed", self._on_recently_added_changed)
         lib.suggested.connect("items-changed", self._on_suggested_changed)
         return False
@@ -62,6 +66,13 @@ class HomePage(Adw.NavigationPage):
 
     def _on_recently_played_changed(self, store, _pos, _removed, _added) -> None:
         self._schedule_repaint("played", self.recently_played_row, store,
+                               self._tile_for_track)
+
+    def _on_most_played_changed(self, store, _pos, _removed, _added) -> None:
+        # A fresh server has no play counts yet; an empty shelf heading
+        # with nothing under it just looks broken.
+        self.most_played_section.set_visible(store.get_n_items() > 0)
+        self._schedule_repaint("most", self.most_played_row, store,
                                self._tile_for_track)
 
     def _on_suggested_changed(self, store, _pos, _removed, _added) -> None:

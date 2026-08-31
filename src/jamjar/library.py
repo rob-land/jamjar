@@ -222,6 +222,7 @@ class Library(GObject.Object):
         self.playlists = Gio.ListStore.new(_Wrapper)
         self.recently_added = Gio.ListStore.new(_Wrapper)
         self.recently_played = Gio.ListStore.new(_Wrapper)
+        self.most_played = Gio.ListStore.new(_Wrapper)
         self.suggested = Gio.ListStore.new(_Wrapper)
 
         self._album_cache: dict[str, list[Track]] = {}
@@ -263,6 +264,7 @@ class Library(GObject.Object):
             model.ensure_first_page()
         self.refresh_playlists()
         self.load_recently_played()
+        self.load_most_played()
         self.load_recently_added()
         self.load_suggested()
         return False
@@ -319,6 +321,20 @@ class Library(GObject.Object):
                     self._on_error("Couldn't load Recently Played.")
                 return
             self._replace(self.recently_played, items)
+        self.runner.submit(runme()).add_done_callback(done)
+
+    def load_most_played(self) -> None:
+        async def runme():
+            return await self.client.most_played_tracks(limit=24)
+        def done(future):
+            try:
+                items = future.result()
+            except Exception as e:
+                log.warning("most played fetch failed: %s", e)
+                if self._on_error is not None:
+                    self._on_error("Couldn't load your most played tracks.")
+                return
+            self._replace(self.most_played, items)
         self.runner.submit(runme()).add_done_callback(done)
 
     def load_suggested(self) -> None:

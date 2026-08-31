@@ -210,6 +210,25 @@ class JellyfinClient:
         }, expire_after=RECENT_PLAY_TTL)
         return [track_from_json(item) for item in data.get("Items", [])]
 
+    async def most_played_tracks(self, limit: int = 24) -> list[Track]:
+        """The tracks with the highest PlayCount for this user.
+
+        Jellyfin keeps a per-user PlayCount on every item and can sort by
+        it directly, so "your most played" needs no bookkeeping of ours.
+        """
+        data = await self._get_json("/Items", params={
+            "userId":                 self.user_id,
+            "IncludeItemTypes":       "Audio",
+            "Recursive":              "true",
+            "SortBy":                 "PlayCount",
+            "SortOrder":              "Descending",
+            "Filters":                "IsPlayed",
+            "Limit":                  limit,
+            "Fields":                 "AlbumPrimaryImageTag",
+            "EnableTotalRecordCount": "false",
+        }, expire_after=HOME_SHELF_TTL)
+        return [track_from_json(item) for item in data.get("Items", [])]
+
     async def suggestions(self, limit: int = 12) -> list[Track]:
         data = await self._get_json(
             f"/Users/{self.user_id}/Suggestions",

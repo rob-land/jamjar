@@ -64,6 +64,30 @@ template $JamjarHomePage: Adw.NavigationPage {
             }
           }
 
+          Box most_played_section {
+            orientation: vertical;
+            spacing: 6;
+            // Shown once the store reports play counts — a fresh server
+            // has none, and a heading over an empty row looks broken.
+            visible: false;
+
+            Label {
+              label: _("Most Played");
+              xalign: 0;
+              styles ["heading"]
+            }
+
+            ScrolledWindow {
+              vscrollbar-policy: never;
+              propagate-natural-height: true;
+
+              child: Box most_played_row {
+                orientation: horizontal;
+                spacing: 12;
+              };
+            }
+          }
+
           Box {
             orientation: vertical;
             spacing: 6;
