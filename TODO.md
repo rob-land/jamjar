@@ -201,14 +201,17 @@ Per `DESIGN.md` v0.3. Symfonium's killer feature for phone users.
 
 ## Standing items
 
-### 15. Empty space under Recently Added tiles
-After cover images load, an empty band appears between the bottom of each
-Recently Added tile and the next section heading. Activation works; only the
-row's vertical sizing is off. Tried scaling the loaded pixbuf to the
-picture's request size and setting `valign=START` on the tile button;
-neither fully eliminates the gap. Likely needs the row's height pinned via
-`height-request` on the row Box, or a measure-overlay-style constraint on
-the tile.
+### 15. Empty space under Recently Added tiles — done
+Cover art is decoded at ~2x its display size to stay crisp on HiDPI, and
+`Gtk.Picture` reports the image's own size as its natural size. The
+shelf's ScrolledWindow has `propagate-natural-height`, so every row
+claimed 256 px while drawing 128 — measured on a reproduction: picture
+natural 256 vs allocated 155, row natural 313 vs tile content 202.
+
+Fixed with `CoverPicture` in `views/_common.py`, a `Gtk.Picture` subclass
+whose `do_measure` returns the requested size for both minimum and
+natural. Keeps the sharp texture, stops it distorting layout. Shelf
+height dropped 313 → 185 with the tiles unchanged.
 
 ### 16. Recently Played and Suggested are empty — done
 `client.recently_played_tracks()` queries `/Items` sorted by `DatePlayed`

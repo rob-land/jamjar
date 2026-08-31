@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 
 from gi.repository import Adw, GLib, Gtk
 
-from ._common import album_tile, load_remote_image_async
+from ._common import CoverPicture, album_tile, load_remote_image_async
 from .track_menu import install_track_menu
 
 if TYPE_CHECKING:
@@ -101,8 +101,7 @@ class HomePage(Adw.NavigationPage):
 
     def _tile_for_track(self, track) -> Gtk.Widget:
         box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
-        picture = Gtk.Picture(content_fit=Gtk.ContentFit.COVER,
-                              width_request=128, height_request=128)
+        picture = CoverPicture(128)
         picture.add_css_class("cover")
         # Prefer the album's cover (most tracks share it) and fall back to
         # any track-level art.

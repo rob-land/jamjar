@@ -98,6 +98,29 @@ def start_instant_mix(item, app, *, kind: str = "track") -> None:
     app.radio.start(mix_station(item, kind_label=kind))
 
 
+class CoverPicture(Gtk.Picture):
+    """A Gtk.Picture that measures as its display size, not its pixels.
+
+    Cover art is decoded at ~2x the display size so it stays crisp on
+    HiDPI, and `Gtk.Picture` reports the image's own size as its natural
+    size. In a shelf whose ScrolledWindow has `propagate-natural-height`,
+    that made every row claim 256 px of height while drawing 128 — the
+    empty band under the Recently Added tiles. Pinning both minimum and
+    natural to the requested size keeps the sharp texture and stops it
+    distorting the layout.
+    """
+
+    __gtype_name__ = "JamjarCoverPicture"
+
+    def __init__(self, size: int) -> None:
+        super().__init__(content_fit=Gtk.ContentFit.COVER)
+        self._size = size
+        self.set_size_request(size, size)
+
+    def do_measure(self, _orientation, _for_size):
+        return (self._size, self._size, -1, -1)
+
+
 def _shelf_tile(picture: Gtk.Picture, title: str, subtitle: str | None,
                 on_click) -> Gtk.Button:
     box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
@@ -121,8 +144,7 @@ def _shelf_tile(picture: Gtk.Picture, title: str, subtitle: str | None,
 
 def _shelf_picture(app, item_id: str, image_tag: str | None,
                    size: int = 128) -> Gtk.Picture:
-    picture = Gtk.Picture(content_fit=Gtk.ContentFit.COVER,
-                          width_request=size, height_request=size)
+    picture = CoverPicture(size)
     picture.add_css_class("cover")
     if image_tag:
         url = app.client.cover_url(item_id, image_tag, max_width=size * 2)
