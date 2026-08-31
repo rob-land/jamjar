@@ -449,7 +449,12 @@ class JellyfinClient:
             params["Genres"] = genres
         if years is not None:
             params["Years"] = years
-        data = await self._get_json("/Items", params=params)
+        if favorites:
+            params["Filters"] = "IsFavorite"
+        # A hearted track should show up in the Favorites tab immediately,
+        # so that query skips the hour-long library cache.
+        data = await self._get_json("/Items", params=params,
+                                    expire_after=0 if favorites else None)
         return [track_from_json(item) for item in data.get("Items", [])]
 
     async def tracks_by_ids(self, ids: list[str]) -> list[Track]:
