@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import inspect
 import logging
+from functools import partial
 from collections.abc import Awaitable, Callable
 
 from gi.repository import Gio, GLib, GObject
@@ -219,6 +220,8 @@ class Library(GObject.Object):
         self.albums  = WindowedListModel(runner, client.list_albums,  on_error=on_error)
         self.artists = WindowedListModel(runner, client.list_artists, on_error=on_error)
         self.songs   = WindowedListModel(runner, client.list_songs,   on_error=on_error)
+        self.favorites = WindowedListModel(
+            runner, partial(client.list_songs, favorites=True), on_error=on_error)
         self.playlists = Gio.ListStore.new(_Wrapper)
         self.recently_added = Gio.ListStore.new(_Wrapper)
         self.recently_played = Gio.ListStore.new(_Wrapper)
@@ -244,7 +247,7 @@ class Library(GObject.Object):
         """Drop cached pages and refetch library + home shelves from the server."""
         self._album_cache.clear()
         self._artist_cache.clear()
-        for model in (self.albums, self.artists, self.songs):
+        for model in (self.albums, self.artists, self.songs, self.favorites):
             model.reset()
 
         async def clear_http():
@@ -260,7 +263,7 @@ class Library(GObject.Object):
         self.runner.submit(clear_http()).add_done_callback(after_clear)
 
     def _refetch_after_cache_clear(self) -> bool:
-        for model in (self.albums, self.artists, self.songs):
+        for model in (self.albums, self.artists, self.songs, self.favorites):
             model.ensure_first_page()
         self.refresh_playlists()
         self.load_recently_played()
@@ -277,6 +280,9 @@ class Library(GObject.Object):
 
     def load_songs(self) -> None:
         self.songs.ensure_first_page()
+
+    def load_favorites(self) -> None:
+        self.favorites.ensure_first_page()
 
     def load_playlists(self) -> None:
         self.refresh_playlists()

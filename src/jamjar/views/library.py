@@ -60,10 +60,12 @@ class LibraryPage(Adw.NavigationPage):
     albums_grid     = Gtk.Template.Child()
     artists_grid    = Gtk.Template.Child()
     songs_list      = Gtk.Template.Child()
+    favorites_list  = Gtk.Template.Child()
     playlists_list  = Gtk.Template.Child()
     albums_stack    = Gtk.Template.Child()
     artists_stack   = Gtk.Template.Child()
     songs_stack     = Gtk.Template.Child()
+    favorites_stack = Gtk.Template.Child()
     playlists_stack = Gtk.Template.Child()
 
     def __init__(self, app: JamjarApplication, window: JamjarWindow) -> None:
@@ -90,10 +92,21 @@ class LibraryPage(Adw.NavigationPage):
         self._wire_albums()
         self._wire_artists()
         self._wire_songs()
+        self._wire_favorites()
         self._wire_playlists()
         self._wire_letter_button()
         self.stack.connect("notify::visible-child-name", self._on_tab_changed)
+        app.connect("favorite-changed", self._on_favorite_changed)
         GLib.idle_add(self._load_visible_tab)
+
+    def _on_favorite_changed(self, _app, _item_id: str, _is_favorite: bool) -> None:
+        """A heart toggled anywhere invalidates the Favorites tab."""
+        if self.app.library is None:
+            return
+        self.app.library.favorites.reset()
+        self._loaded.discard("favorites")
+        if self.stack.get_visible_child_name() == "favorites":
+            self._load_tab("favorites")
 
     def _load_visible_tab(self) -> bool:
         if self.app.library is None:
@@ -112,7 +125,7 @@ class LibraryPage(Adw.NavigationPage):
     def _prefetch_other_tabs(self) -> bool:
         if self.app.library is None:
             return False
-        for name in ("albums", "artists", "songs", "playlists"):
+        for name in ("albums", "artists", "songs", "favorites", "playlists"):
             self._load_tab(name)
         return False
 
@@ -453,6 +466,7 @@ class LibraryPage(Adw.NavigationPage):
             "albums":    lib.load_albums,
             "artists":   lib.load_artists,
             "songs":     lib.load_songs,
+            "favorites": lib.load_favorites,
             "playlists": lib.load_playlists,
         }.get(name)
         if loader is None:
@@ -562,16 +576,27 @@ class LibraryPage(Adw.NavigationPage):
     # ------- songs -------
 
     def _wire_songs(self) -> None:
-        store = self.app.library.songs
-        selection = Gtk.NoSelection.new(store)
-        self.songs_list.set_model(selection)
-        self._observe_windowed(store, self.songs_stack)
+        self._wire_track_list(self.songs_list, self.songs_stack,
+                              self.app.library.songs)
+
+    def _wire_favorites(self) -> None:
+        self._wire_track_list(self.favorites_list, self.favorites_stack,
+                              self.app.library.favorites)
+
+    def _wire_track_list(self, view: Gtk.ListView, stack: Gtk.Stack,
+                         store) -> None:
+        """Bind a windowed track store to a ListView of Adw.ActionRows.
+
+        Shared by Songs and Favorites — same row, different query.
+        """
+        view.set_model(Gtk.NoSelection.new(store))
+        self._observe_windowed(store, stack)
 
         factory = Gtk.SignalListItemFactory()
         factory.connect("setup", self._song_setup)
-        factory.connect("bind", self._song_bind)
-        self.songs_list.set_factory(factory)
-        self.songs_list.connect("activate", self._song_activated)
+        factory.connect("bind", self._song_bind, store)
+        view.set_factory(factory)
+        view.connect("activate", self._song_activated)
 
     def _song_setup(self, _factory, item) -> None:
         row = Adw.ActionRow(activatable=True)
@@ -587,14 +612,14 @@ class LibraryPage(Adw.NavigationPage):
                                             if it.get_item() else None),
                            self.app, self.window)
 
-    def _song_bind(self, _factory, item) -> None:
+    def _song_bind(self, _factory, item, store) -> None:
         track = item.get_item().payload
         item.row.set_title(escape_markup(track.name))
         item.row.set_subtitle(escape_markup(
             " • ".join(part for part in (track.primary_artist, track.album) if part)
         ))
         item.duration_label.set_label(format_duration(track.duration_seconds))
-        self.app.library.songs.maybe_request_more(item.get_position())
+        store.maybe_request_more(item.get_position())
 
     def _song_activated(self, view, position) -> None:
         model = view.get_model()
@@ -602,8 +627,7 @@ class LibraryPage(Adw.NavigationPage):
         if wrapper is None:
             log.warning("song activated at position %s but no item", position)
             return
-        store = self.app.library.songs
-        tracks = [store.get_item(i).payload for i in range(store.get_n_items())]
+        tracks = [model.get_item(i).payload for i in range(model.get_n_items())]
         self.app.queue.replace(tracks, start_index=position)
         self.app.player.play(wrapper.payload)
 

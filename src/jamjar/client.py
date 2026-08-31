@@ -390,7 +390,8 @@ class JellyfinClient:
                          name_starts_with: str | None = None,
                          name_less_than: str | None = None,
                          genres: str | None = None,
-                         years: int | None = None) -> list[Track]:
+                         years: int | None = None,
+                         favorites: bool = False) -> list[Track]:
         # MediaSources is intentionally omitted here: the songs list only needs
         # display fields. MediaSources is fetched on demand at play time
         # via get_item(), and is the heaviest field Jellyfin can return.
