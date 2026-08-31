@@ -21,10 +21,11 @@ log = logging.getLogger(__name__)
 class QueuePage(Adw.NavigationPage):
     __gtype_name__ = "JamjarQueuePage"
 
-    sidebar_toggle = Gtk.Template.Child()
-    queue_list     = Gtk.Template.Child()
-    empty_state    = Gtk.Template.Child()
+    sidebar_toggle    = Gtk.Template.Child()
+    queue_list        = Gtk.Template.Child()
+    empty_state       = Gtk.Template.Child()
     queue_menu_button = Gtk.Template.Child()
+    queue_title       = Gtk.Template.Child()
 
     def __init__(self, app: JamjarApplication, window: JamjarWindow) -> None:
         super().__init__()
@@ -43,7 +44,16 @@ class QueuePage(Adw.NavigationPage):
             app.queue.connect("queue-changed",   self._refresh)
             app.queue.connect("current-changed", self._refresh_current)
         app.connect("favorite-changed", self._on_favorite_changed_external)
+        if app.radio is not None:
+            app.radio.connect("station-changed", self._on_station_changed)
+            self._on_station_changed(app.radio, app.radio.station)
         GLib.idle_add(self._refresh)
+
+    def _on_station_changed(self, _radio, station) -> None:
+        """Name the running station so an endlessly growing queue explains
+        itself rather than looking like a bug."""
+        self.queue_title.set_subtitle(
+            f"Radio · {station.title}" if station is not None else "")
 
     def _refresh(self, *_args) -> bool:
         for child in list(self.queue_list):

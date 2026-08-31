@@ -258,6 +258,50 @@ class JellyfinClient:
         )
         return genres, years
 
+    async def item_tags(self, include_item_types: str = "Audio") -> list[str]:
+        """User-applied tags present in the library, for tag radio stations."""
+        data = await self._get_json("/Items/Filters", params={
+            "userId":           self.user_id,
+            "IncludeItemTypes": include_item_types,
+            "Recursive":        "true",
+        }, expire_after=METADATA_TTL)
+        return sorted({t for t in (data.get("Tags") or []) if t})
+
+    async def random_tracks(self, *, genres: list[str] | None = None,
+                            years: list[int] | None = None,
+                            tags: list[str] | None = None,
+                            favorites: bool = False,
+                            limit: int = 100,
+                            exclude_ids: set[str] | None = None) -> list[Track]:
+        """A random batch of tracks matching a station's filters.
+
+        Never cached: `SortBy=Random` behind the SQLite response cache
+        would hand back the same "random" batch on every refill.
+        Jellyfin ORs multi-value Genres/Tags on `|`, and Years on `,`.
+        """
+        params: dict[str, Any] = {
+            "userId":                 self.user_id,
+            "IncludeItemTypes":       "Audio",
+            "Recursive":              "true",
+            "SortBy":                 "Random",
+            "Limit":                  limit,
+            "Fields":                 "MediaSources,AlbumPrimaryImageTag",
+            "EnableTotalRecordCount": "false",
+        }
+        if genres:
+            params["Genres"] = "|".join(genres)
+        if tags:
+            params["Tags"] = "|".join(tags)
+        if years:
+            params["Years"] = ",".join(str(y) for y in years)
+        if favorites:
+            params["Filters"] = "IsFavorite"
+        data = await self._get_json("/Items", params=params, expire_after=0)
+        tracks = [track_from_json(item) for item in data.get("Items", [])]
+        if exclude_ids:
+            tracks = [t for t in tracks if t.id not in exclude_ids]
+        return tracks
+
     async def list_albums(self, start: int = 0, limit: int = 100,
                           sort_by: str = "SortName",
                           sort_order: str = "Ascending",

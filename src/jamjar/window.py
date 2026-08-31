@@ -19,6 +19,7 @@ from .views.login import LoginDialog
 from .views.now_playing import NowPlayingPage
 from .views.playlist import PlaylistPage
 from .views.queue import QueuePage
+from .views.radio import RadioPage
 from .views.search import SearchPage
 
 log = logging.getLogger(__name__)
@@ -27,6 +28,7 @@ SIDEBAR_PAGES: list[tuple[str, str, str]] = [
     ("home",        "user-home-symbolic",                    "Home"),
     ("history",     "clock-symbolic",                        "History"),
     ("library",     "folder-music-symbolic",                 "Library"),
+    ("radio",       "media-playlist-shuffle-symbolic",       "Radio"),
     ("now-playing", "media-playback-start-symbolic",         "Now Playing"),
     ("queue",       "view-list-symbolic",                    "Queue"),
     ("downloaded",  "folder-download-symbolic",              "Downloaded"),
@@ -188,6 +190,8 @@ class JamjarWindow(Adw.ApplicationWindow):
             return HistoryPage(self.app, self)
         if name == "library":
             return LibraryPage(self.app, self)
+        if name == "radio":
+            return RadioPage(self.app, self)
         if name == "search":
             return SearchPage(self.app, self)
         if name == "now-playing":

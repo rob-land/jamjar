@@ -86,6 +86,7 @@ jamjar/
 │       ├── artist-page.blp
 │       ├── playlist-page.blp
 │       ├── home-page.blp
+│       ├── radio-page.blp
 │       ├── search-page.blp
 │       ├── now-playing-bar.blp
 │       ├── now-playing-page.blp
@@ -119,6 +120,7 @@ jamjar/
         ├── album.py
         ├── artist.py
         ├── playlist.py
+        ├── radio.py
         ├── search.py
         ├── now_playing.py
         ├── queue.py
@@ -245,6 +247,9 @@ The login dialog shows server-discovery results as `Adw.ActionRow`s, then offers
 | Recently played | `GET` | `/Items?IncludeItemTypes=Audio&SortBy=DatePlayed&SortOrder=Descending&Filters=IsPlayed` |
 | Suggestions | `GET` | `/Users/{u}/Suggestions?mediaType=Audio` |
 | Item by id | `GET` | `/Users/{u}/Items/{id}` (used for click-through nav from track artists/albums) |
+| Station vocabulary | `GET` | `/Items/Filters` (genres, years, tags) |
+| Station tracks | `GET` | `/Items?SortBy=Random&Genres=…&Years=…&Tags=…` (never cached) |
+| Instant Mix | `GET` | `/Items/{id}/InstantMix` |
 | Stream URL | `GET` | `/Audio/{id}/universal?api_key=...&audioCodec=...&maxStreamingBitrate=...` |
 | Cover art | `GET` | `/Items/{id}/Images/Primary?maxWidth=512&tag={tag}` |
 | Lyrics | `GET` | `/Audio/{id}/Lyrics` |
@@ -277,6 +282,7 @@ For offline downloads, use `/Audio/{id}/universal?static=true` to bypass transco
 
 - Use `playbin3` — it gives gapless and network buffering for free.
 - Gapless: subscribe to the `about-to-finish` bus message and set the next URI before EOS fires.
+- Crossfade needs both tracks audible at once, so the player runs **two** decks (see `DESIGN.md` §7.1). Anything touching volume goes through the master level, never a deck's gain.
 - ReplayGain: `rgvolume` element in a custom `audio-filter` bin, gated by GSettings.
 - Default codec/bitrate split:
   - Wi-Fi: lossless or `audioCodec=copy`
@@ -320,8 +326,9 @@ Notable: `--talk-name=org.freedesktop.secrets` for libsecret access, and the two
 
 - **v0.1 (shipped)** — Discovery, both auth flows, library browsing (Albums/Artists/Songs/Playlists), basic playback, queue, MPRIS, scrobbling.
 - **v0.2 (in progress)** — Search ✅, lyrics ✅ (with synced highlighting + auto-scroll + click-to-seek), favorites ✅ (with cross-surface sync), sleep timer ✅, volume slider ✅, jump-to-letter ✅, image cache ✅, paginated library ✅, recently played + suggestions ✅, track + album context menus ✅, clickable artist/album labels ✅, GNOME HIG polish (shortcuts overlay, symbolic icon, header search, empty states, error toasts, screenshots/branding in metainfo) ✅. Still open: drag-to-reorder queue, playlist editing, sort/filter on Library pages, up-next preview popover, dedicated history page, JSON cache + manual refresh.
+- **v0.2 additions** — Crossfade (dual-deck `playbin3`) ✅, radio stations by mood / decade / style / tag with endless refill ✅.
 - **v0.3** — Offline downloads, multi-server switching, ReplayGain UI, ListenBrainz passthrough, Phosh lockscreen artwork polish, GNOME Shell search provider.
-- **v0.4** — Cast support (UPnP/DLNA via `gupnp`), "driving" view for the NexDock dock, smart playlists, genre/era/mood radio.
+- **v0.4** — Cast support (UPnP/DLNA via `gupnp`), "driving" view for the NexDock dock, smart playlists.
 
 ---
 

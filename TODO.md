@@ -22,7 +22,7 @@ gap-to-close benchmark for feature work.
 |---------------|-----------------------------------------------------|
 | Symfonium     | Context menus, smart queue ops, EQ, offline sync   |
 | Amberol       | Tactile feel, smooth transitions, polish           |
-| Spotify/Apple | Curated radio, lyrics view, polished now-playing    |
+| Spotify/Apple | Polished now-playing (radio and lyrics now covered)  |
 | Lollypop      | Party mode, last.fm integration                     |
 | Rhythmbox     | Internet radio, podcast support (out of scope)      |
 
@@ -162,18 +162,35 @@ track context menus and tap-to-play.
 
 ## Tier 3 — bigger lift, clear feature parity
 
-### 12. Instant Mix / radio from any item — partial
-Jellyfin's `/Items/{id}/InstantMix` is the engine. Start with "Start radio
-from this album/artist" via context menu (Tier-2-adjacent quick win since the
-context-menu plumbing already exists), then expand to a standalone station
-picker filtered by genre / era / mood. Investigate which `/Items` query
-params (`SortBy`, `Genres`, `Years`, instant-mix endpoints) the UI needs to
-expose.
+### 12. Instant Mix / radio from any item — done
+Track and album context menus expose Start Track Radio / Start Album Radio,
+and the artist detail page has Start Radio, all backed by
+`/Items/{id}/InstantMix`.
 
-Track and album context menus now expose Start Track Radio / Start Album Radio,
-and the artist detail page has Start Radio. All are backed by
-`/Items/{id}/InstantMix`, replacing the queue and starting playback. Still open:
-standalone station picker, genre / era / mood radio.
+The standalone picker is the **Radio** sidebar page (`views/radio.py`,
+`radio.py`): Moods, Decades, Styles, From Your Tags, plus Favorites and
+Surprise Me. Jellyfin has no sonic analysis, so there is no real mood
+data — moods are a curated genre grouping (`MOOD_GENRES`) intersected
+with the genres `/Items/Filters` reports, shown alongside any tags the
+user has actually applied. Stations play through `/Items?SortBy=Random`
+with `Genres` / `Years` / `Tags` / `Filters=IsFavorite` (never cached —
+a cached random query returns the same "random" batch every time).
+
+Every station is endless: `RadioSession` appends a fresh batch when the
+queue drops below five remaining, hanging off the player's
+`track-changed` because gapless and crossfade transitions advance the
+queue without emitting `current-changed`. Ownership rides on
+`PlayQueue.origin`, so playing an album or playlist ends the station on
+its own. Seeded radios go through the same session, so they refill too.
+
+### 12a. Crossfade — done
+`player.py` runs two `playbin3` decks so the outgoing and incoming tracks
+can overlap. `crossfade-seconds` (0–12, default 0) and `crossfade-albums`
+in preferences; 0 keeps the original gapless handoff, which is also used
+within an album and under repeat-one. Manual skips fade out over 300 ms
+and pause/resume ramps over 200 ms. Volume is a master level times a
+per-deck fade gain, so the volume slider, MPRIS and the sleep timer are
+untouched by any of it.
 
 ### 13. Offline downloads
 Per `DESIGN.md` v0.3. Symfonium's killer feature for phone users.

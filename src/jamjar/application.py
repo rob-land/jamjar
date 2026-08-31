@@ -15,6 +15,7 @@ from .library import Library
 from .mpris import MprisService
 from .player import Player
 from .queue import PlayQueue
+from .radio import RadioSession
 from .scrobble import Scrobbler
 from .secrets import clear_token, lookup_token
 from .sleep_timer import SleepTimer
@@ -53,6 +54,7 @@ class JamjarApplication(Adw.Application):
         self.player: Player | None = None
         self.scrobbler: Scrobbler | None = None
         self.mpris: MprisService | None = None
+        self.radio: RadioSession | None = None
         self.sleep_timer = SleepTimer()
         self._holding = False
         self._settings_handlers: list[int] = []
@@ -121,6 +123,7 @@ class JamjarApplication(Adw.Application):
             on_raise=lambda: GLib.idle_add(lambda: (win.present(), False)[1]) if win else None,
         )
 
+        self.radio = RadioSession(self)
         self._player_state_handler = self.player.connect("state-changed", self._on_player_state)
         self.sleep_timer.attach(self.player)
         self._update_session_actions()
@@ -153,6 +156,7 @@ class JamjarApplication(Adw.Application):
         self.player = None
         self.scrobbler = None
         self.mpris = None
+        self.radio = None
         self._release_hold()
         self._update_session_actions()
 

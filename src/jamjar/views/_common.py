@@ -9,6 +9,7 @@ from gi.repository import Gdk, GdkPixbuf, GLib, Gtk
 
 from .. import imagecache
 from ..models import album_from_json, artist_from_json
+from ..radio import mix_station
 
 log = logging.getLogger(__name__)
 
@@ -84,35 +85,17 @@ def commit_favorite(client, item, new_state: bool, runner,
     runner.submit(runme()).add_done_callback(done)
 
 
-def start_instant_mix(item, app, *, label: str = "radio") -> None:
-    """Replace the queue with Jellyfin's Instant Mix for `item` and play it."""
-    if app.client is None or app.queue is None or app.player is None:
+def start_instant_mix(item, app, *, kind: str = "track") -> None:
+    """Start an endless Instant Mix station seeded from `item`.
+
+    Goes through `app.radio` rather than fetching once and replacing the
+    queue, so a seeded radio refills like any other station instead of
+    running dry after one batch. `kind` names what the seed is ("track",
+    "album", "artist") and only shows up in the station's subtitle.
+    """
+    if app.radio is None or app.queue is None or app.player is None:
         return
-
-    async def runme():
-        return await app.client.instant_mix(item.id)
-
-    def done(future):
-        try:
-            tracks = future.result()
-        except Exception as e:
-            log.warning("instant mix failed for %s: %s", item.id, e)
-            if hasattr(app, "show_toast"):
-                app.show_toast(f"Couldn't start {label}.")
-            return
-        if not tracks:
-            if hasattr(app, "show_toast"):
-                app.show_toast(f"No tracks found for {label}.")
-            return
-
-        def apply() -> bool:
-            app.queue.replace(tracks, start_index=0)
-            app.player.play(tracks[0])
-            return False
-
-        GLib.idle_add(apply)
-
-    app.runner.submit(runme()).add_done_callback(done)
+    app.radio.start(mix_station(item, kind_label=kind))
 
 
 def fallback_icon(name: str = "audio-x-generic-symbolic", pixel_size: int = 64) -> Gtk.Image:

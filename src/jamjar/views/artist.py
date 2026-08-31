@@ -122,4 +122,4 @@ class ArtistPage(Adw.NavigationPage):
                         on_failure=lambda: self._sync_favorite(not new_state))
 
     def _on_start_radio(self, _button) -> None:
-        start_instant_mix(self.artist, self.app, label="artist radio")
+        start_instant_mix(self.artist, self.app, kind="artist")

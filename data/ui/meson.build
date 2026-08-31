@@ -10,6 +10,7 @@ blueprint_sources = files(
   'playlist-page.blp',
   'home-page.blp',
   'history-page.blp',
+  'radio-page.blp',
   'search-page.blp',
   'now-playing-bar.blp',
   'now-playing-page.blp',

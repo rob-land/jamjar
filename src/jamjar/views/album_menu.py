@@ -71,7 +71,7 @@ def _build_popover(album, app, window, parent) -> Gtk.PopoverMenu:
                              lambda tracks: app.queue.append(tracks)),
         enabled=app.queue is not None)
     add("start-radio",
-        lambda: start_instant_mix(album, app, label="album radio"),
+        lambda: start_instant_mix(album, app, kind="album"),
         enabled=(app.client is not None
                  and app.queue is not None
                  and app.player is not None))

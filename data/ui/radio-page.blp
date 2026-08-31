@@ -1,0 +1,77 @@
+using Gtk 4.0;
+using Adw 1;
+
+template $JamjarRadioPage: Adw.NavigationPage {
+  title: _("Radio");
+  tag: "radio";
+
+  child: Adw.ToolbarView {
+    [top]
+    Adw.HeaderBar {
+      [start]
+      Button sidebar_toggle {
+        icon-name: "sidebar-show-symbolic";
+        tooltip-text: _("Toggle Sidebar");
+      }
+
+      [end]
+      Button radio_refresh {
+        icon-name: "view-refresh-symbolic";
+        tooltip-text: _("Refresh");
+        styles ["flat"]
+      }
+
+      [end]
+      Button radio_search {
+        icon-name: "system-search-symbolic";
+        action-name: "app.search";
+        tooltip-text: _("Search");
+      }
+    }
+
+    content: Stack radio_stack {
+      transition-type: crossfade;
+
+      StackPage {
+        name: "loading";
+
+        child: Adw.StatusPage {
+          icon-name: "audio-x-generic-symbolic";
+          title: _("Tuning in…");
+          description: _("Reading the genres and years in your library.");
+        };
+      }
+
+      StackPage {
+        name: "error";
+
+        child: Adw.StatusPage error_state {
+          icon-name: "network-offline-symbolic";
+          title: _("Couldn't load stations");
+          description: _("Check the connection to your server and try again.");
+        };
+      }
+
+      StackPage {
+        name: "stations";
+
+        child: ScrolledWindow {
+          hscrollbar-policy: never;
+
+          child: Adw.Clamp {
+            maximum-size: 1100;
+
+            child: Box sections_box {
+              orientation: vertical;
+              spacing: 24;
+              margin-start: 12;
+              margin-end: 12;
+              margin-top: 12;
+              margin-bottom: 12;
+            };
+          };
+        };
+      }
+    };
+  };
+}

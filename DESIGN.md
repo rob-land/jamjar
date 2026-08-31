@@ -60,6 +60,7 @@ jamjar/
     ├── library.py                   # Caching, paginated lists
     ├── player.py                    # GStreamer pipeline
     ├── queue.py                     # Play queue + shuffle/repeat
+    ├── radio.py                     # Stations + endless refill
     ├── mpris.py                     # MPRIS2 D-Bus
     ├── scrobble.py                  # /Sessions/Playing reporting
     ├── lyrics.py                    # /Items/{id}/Lyrics
@@ -70,6 +71,7 @@ jamjar/
         ├── album.py
         ├── artist.py
         ├── playlist.py
+        ├── radio.py
         ├── search.py
         ├── now_playing.py
         ├── queue.py
@@ -297,6 +299,8 @@ For offline mode, the user toggles "Make available offline" on an album/playlist
 ## 7. Playback Engine
 
 `playbin3` handles network buffering, gapless, and most format quirks for free.
+The player runs **two** of them (see 7.1); the sketch below is the single-deck
+shape everything else still builds on.
 
 ```python
 # player.py
@@ -346,7 +350,33 @@ class Player(GObject.Object):
         return True
 ```
 
-ReplayGain is added by inserting an `rgvolume` element into a custom `audio-filter` bin. The transcode parameters in the stream URL come from preferences: codec (`opus`/`aac`/`flac`), max bitrate (96k → lossless), and `transcodingContainer`. On Wi-Fi default to lossless or `audioCodec=copy`; on mobile data default to 128k Opus.
+ReplayGain is added by inserting an `rgvolume` element into a custom `audio-filter` bin (one element per deck — a GStreamer element belongs to a single pipeline). The transcode parameters in the stream URL come from preferences: codec (`opus`/`aac`/`flac`), max bitrate (96k → lossless), and `transcodingContainer`. On Wi-Fi default to lossless or `audioCodec=copy`; on mobile data default to 128k Opus.
+
+### 7.1 Crossfade — two decks
+
+A crossfade needs the outgoing and incoming tracks audible simultaneously, which one `playbin3` cannot do. `player.py` therefore owns two decks that alternate. The **active** deck is the one whose position, duration, state and metadata the rest of the app sees; the other sits at `NULL` except while fading out.
+
+Volume splits in two:
+
+* **master** — the single user-facing level (volume slider, MPRIS, `sleep_timer.py`)
+* **deck gain** — owned by the fade logic alone
+
+The pipeline volume is the product, so nothing outside `player.py` needs to know decks exist.
+
+Transitions:
+
+| Trigger | Behaviour |
+|---|---|
+| Auto, crossfade > 0 | Equal-power (cos/sin) overlap of `crossfade-seconds`, armed from the 500 ms position tick |
+| Auto, crossfade = 0 | Original `about-to-finish` gapless handoff on the active deck |
+| Same album | Gapless handoff regardless, unless `crossfade-albums` is set |
+| `repeat-one` | Gapless handoff — overlapping a track with itself is a flanger |
+| Manual skip | 300 ms fade-out, then the queue switch |
+| Pause / resume | 200 ms ramp down / up |
+
+Metadata flips at the **start** of a crossfade, when the incoming track becomes audible: the queue advances, `track-changed` fires, and the incoming deck becomes active while the outgoing one finishes its ramp. `about-to-finish` on a non-active deck is ignored, which is what stops a crossfading transition from also priming a gapless one.
+
+`equal_power()` and `should_crossfade()` live at module scope, deliberately outside the class, so they can be tested without building a pipeline (`tests/test_player_fade.py`).
 
 ---
 
@@ -429,6 +459,8 @@ Songs view is a `GtkColumnView` on desktop (Title / Artist / Album / Duration co
 **Lyrics**: `/Audio/{id}/Lyrics` returns timestamped LRC when available. Render with a synced auto-scroll using `Gtk.ScrolledWindow.emit("scroll-child", ...)`; the active line is bold and centered.
 
 **Favorites & rating**: Heart toggle on every track row, hooked to `/Users/{u}/FavoriteItems/{id}`.
+
+**Radio stations** (`radio.py`): Jellyfin has no sonic analysis, so stations are built from the vocabulary it does expose — `/Items/Filters` genres and years plus user tags — and played through `/Items?SortBy=Random` with `Genres` / `Years` / `Tags` / `Filters=IsFavorite`. Moods are a curated genre grouping narrowed to the genres the library actually has. Seeded radio (track / album / artist context menus) uses `/Items/{id}/InstantMix`. `RadioSession` keeps a station endless by appending a fresh batch whenever the queue runs low; ownership is tracked through `PlayQueue.origin`, so playing anything else ends the station without extra teardown.
 
 **Sleep timer**: GSettings-backed dropdown (15/30/60 min, end of track, end of album).
 

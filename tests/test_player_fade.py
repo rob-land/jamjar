@@ -23,9 +23,9 @@ import pytest
 # `jamjar.player` pulls it in (same preamble as test_view_imports.py).
 gi.require_version("Gst", "1.0")
 
-from jamjar.models import Track
-from jamjar.player import equal_power, should_crossfade
-from jamjar.queue import RepeatMode
+from jamjar.models import Track  # noqa: E402
+from jamjar.player import equal_power, should_crossfade  # noqa: E402
+from jamjar.queue import RepeatMode  # noqa: E402
 
 
 def _t(label: str, album_id: str = "") -> Track:

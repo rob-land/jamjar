@@ -36,6 +36,10 @@ class PlayQueue(GObject.Object):
         self._index: int = -1
         self._shuffle: bool = False
         self._repeat: RepeatMode = RepeatMode.OFF
+        # Free-form marker for whoever filled the queue last. RadioSession
+        # stamps it so it can tell "still my station" from "the user
+        # started playing something else" without extra signals.
+        self.origin: str | None = None
 
     # ------- properties -------
 
@@ -79,8 +83,10 @@ class PlayQueue(GObject.Object):
 
     # ------- mutation -------
 
-    def replace(self, tracks: list[Track], start_index: int = 0) -> None:
+    def replace(self, tracks: list[Track], start_index: int = 0,
+                origin: str | None = None) -> None:
         self._tracks = list(tracks)
+        self.origin = origin
         self._index = start_index if 0 <= start_index < len(tracks) else (-1 if not tracks else 0)
         if self._shuffle:
             self._reshuffle_keep_current()
@@ -135,6 +141,7 @@ class PlayQueue(GObject.Object):
 
     def clear(self) -> None:
         self._tracks.clear()
+        self.origin = None
         self._index = -1
         self.emit("queue-changed")
         self.emit("current-changed", None)
